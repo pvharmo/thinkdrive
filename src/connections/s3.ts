@@ -14,7 +14,7 @@ export const newConnection = async (
     secretKey: 'password',
   })
 
-  return {
+  const connection = {
     async get(path: string) {
       return {
         content: await minio.getObject(userId, path),
@@ -52,5 +52,20 @@ export const newConnection = async (
         console.error(e)
       }
     },
+    async destroyContainer(path: string): Promise<void> {
+      const childrenStream = minio.listObjectsV2(userId, path, true)
+      const children = []
+      for await (const child of childrenStream) {
+        children.push(child)
+      }
+      await minio.removeObjects(
+        userId,
+        children.map((x) => {
+          return x.name
+        })
+      )
+    },
   }
+
+  return connection
 }

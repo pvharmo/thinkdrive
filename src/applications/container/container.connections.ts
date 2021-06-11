@@ -33,3 +33,15 @@ export const save = async (path: string, userId: string) => {
     await connection.saveContainer(distPath)
   }
 }
+
+export const destroy = async (path: string, userId: string) => {
+  const [internalPath, distPath] = path.split('//')
+
+  if (!distPath) {
+    const connection = await newLocalStorageConnection(userId, userId)
+    return connection.destroyContainer(internalPath)
+  } else {
+    const connection = await getConnection(internalPath, userId)
+    return await connection.destroyContainer(distPath)
+  }
+}

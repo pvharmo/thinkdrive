@@ -55,6 +55,19 @@ export const createConnection = (id: string, userId: string) => {
     async destroy(path: string): Promise<void> {
       await minio.removeObject(userId, path)
     },
+    async destroyContainer(path: string): Promise<void> {
+      const childrenStream = minio.listObjectsV2(userId, path, true)
+      const children = []
+      for await (const child of childrenStream) {
+        children.push(child)
+      }
+      await minio.removeObjects(
+        userId,
+        children.map((x) => {
+          return x.name
+        })
+      )
+    },
   }
 
   return connection

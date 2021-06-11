@@ -25,6 +25,7 @@ export interface StandardConnection {
   readonly destroy: (path: string) => Promise<void>
   readonly getContainerContent: (path: string) => Promise<Child[]>
   readonly saveContainer: (path: string) => Promise<void>
+  readonly destroyContainer: (path: string) => Promise<void>
 }
 
 export const getConnection = async (internalPath: string, userId: string) => {

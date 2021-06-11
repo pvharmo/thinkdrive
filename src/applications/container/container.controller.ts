@@ -27,3 +27,15 @@ export const save = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'An error has occurred.' })
   }
 }
+
+export const destroy = async (req: Request, res: Response) => {
+  const userId = req.params.userId
+
+  try {
+    await connection.destroy(req.params[0], userId)
+    res.status(200).json({ message: 'Container successfully deleted' })
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ message: 'An error has occurred.' })
+  }
+}
