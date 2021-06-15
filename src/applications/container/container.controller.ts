@@ -16,12 +16,12 @@ export const save = async (req: Request, res: Response) => {
 
   try {
     await connection.save(req.params[0], userId)
-    res.status(201).json({ message: 'Object successfully stored' })
+    res.status(201).json({ message: 'Container successfully created' })
   } catch (e) {
     if (e instanceof NotFound) {
       res.status(404).json({ message: 'path not found' })
     } else if (e instanceof AlreadyExists) {
-      res.status(400).json({ message: 'Folder already exists' })
+      res.status(400).json({ message: 'Container already exists' })
     }
     console.error(e)
     res.status(500).json({ message: 'An error has occurred.' })

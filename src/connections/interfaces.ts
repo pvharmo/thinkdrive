@@ -1,11 +1,11 @@
-import { Readable } from 'stream'
-
 import ConnectionModel from './connections.repository'
 import { newConnection as newLocalStorageConnection } from './localStorage'
 import { newConnection as newS3Connection } from './s3'
 
+export interface PresignedUrl extends String {}
+
 export interface Obj {
-  content: string | Buffer | Readable
+  presignedUrl: PresignedUrl
 }
 
 export interface ObjectNotFound {
@@ -21,7 +21,8 @@ export class AlreadyExists extends Error {}
 
 export interface StandardConnection {
   readonly get: (path: string) => Promise<Obj>
-  readonly store: (path: string, obj: Obj) => Promise<void>
+  readonly create: (path: string) => Promise<Obj>
+  readonly update: (path: string) => Promise<Obj>
   readonly destroy: (path: string) => Promise<void>
   readonly getContainerContent: (path: string) => Promise<Child[]>
   readonly saveContainer: (path: string) => Promise<void>

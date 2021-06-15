@@ -1,6 +1,6 @@
 import { Client } from 'minio'
 
-import { Child, Obj, StandardConnection } from './interfaces'
+import { Child, StandardConnection } from './interfaces'
 
 export const newConnection = async (
   connectionId: string,
@@ -14,10 +14,10 @@ export const newConnection = async (
     secretKey: 'password',
   })
 
-  const connection = {
+  const connection: StandardConnection = {
     async get(path: string) {
       return {
-        content: await minio.getObject(userId, path),
+        presignedUrl: await minio.presignedPutObject(userId, path),
       }
     },
     async getContainerContent(path: string): Promise<Child[]> {
@@ -28,12 +28,14 @@ export const newConnection = async (
       }
       return children
     },
-    async store(path: string, obj: Obj) {
-      try {
-        minio.putObject(userId, path, obj.content)
-        console.log('object saved on s3')
-      } catch (e) {
-        console.error(e)
+    async create(path: string) {
+      return {
+        presignedUrl: await minio.presignedPutObject(userId, path),
+      }
+    },
+    async update(path: string) {
+      return {
+        presignedUrl: await minio.presignedPutObject(userId, path),
       }
     },
     async saveContainer(path: string) {

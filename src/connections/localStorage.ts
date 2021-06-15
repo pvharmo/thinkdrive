@@ -11,8 +11,31 @@ const minio = new Client({
   secretKey: 'password',
 })
 
-export const createConnection = (id: string, userId: string) => {
+export const createConnection = (_id: string, userId: string) => {
   const connection: StandardConnection = {
+    async get(path: string): Promise<Obj> {
+      const presignedUrl = await minio.presignedGetObject(userId, path)
+      return { presignedUrl }
+    },
+    async destroy(path: string): Promise<void> {
+      await minio.removeObject(userId, path)
+    },
+    async update(path: string): Promise<Obj> {
+      const presignedUrl = await minio.presignedPutObject(userId, path, 30)
+      return { presignedUrl }
+    },
+    async create(path: string): Promise<Obj> {
+      try {
+        const presignedUrl = await minio.presignedPutObject(userId, path, 30)
+        return { presignedUrl }
+      } catch (e) {
+        if (e instanceof UniqueConstraintError) {
+          throw new AlreadyExists()
+        } else {
+          throw e
+        }
+      }
+    },
     async getContainerContent(path: string): Promise<Child[]> {
       const childrenStream = minio.listObjectsV2(userId, path)
       const children = []
@@ -20,12 +43,6 @@ export const createConnection = (id: string, userId: string) => {
         children.push(child)
       }
       return children
-    },
-    async get(path: string): Promise<Obj> {
-      const myObj: Obj = {
-        content: 'test',
-      }
-      return myObj
     },
     async saveContainer(path: string): Promise<void> {
       try {
@@ -38,22 +55,6 @@ export const createConnection = (id: string, userId: string) => {
           throw e
         }
       }
-    },
-    async store(path: string, obj: Obj): Promise<void> {
-      console.log(obj)
-      try {
-        await minio.putObject(userId, path, obj.content)
-        console.log('object saved locally')
-      } catch (e) {
-        if (e instanceof UniqueConstraintError) {
-          throw new AlreadyExists()
-        } else {
-          throw e
-        }
-      }
-    },
-    async destroy(path: string): Promise<void> {
-      await minio.removeObject(userId, path)
     },
     async destroyContainer(path: string): Promise<void> {
       const childrenStream = minio.listObjectsV2(userId, path, true)

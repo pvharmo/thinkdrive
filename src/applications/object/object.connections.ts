@@ -29,25 +29,25 @@ export const get = async (
   }
 }
 
-export const save = async (path: string, obj: Obj, userId: string) => {
+export const update = async (path: string, userId: string): Promise<Obj> => {
   const [internalPath, distPath] = path.split('//')
   if (!distPath) {
     const connection = await newLocalStorageConnection(userId, userId)
-    await connection.store(internalPath, obj)
+    return await connection.update(internalPath)
   } else {
     const connection = await getConnection(internalPath, userId)
-    await connection.store(distPath, obj)
+    return await connection.update(distPath)
   }
 }
 
-export const create = async (path: string, obj: Obj, userId: string) => {
+export const create = async (path: string, userId: string): Promise<Obj> => {
   const [internalPath, distPath] = path.split('//')
   if (!distPath) {
     const connection = await newLocalStorageConnection(userId, userId)
-    await connection.store(internalPath, obj)
+    return await connection.create(internalPath)
   } else {
     const connection = await getConnection(internalPath, userId)
-    await connection.store(distPath, obj)
+    return await connection.create(distPath)
   }
 }
 

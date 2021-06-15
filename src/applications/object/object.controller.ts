@@ -16,10 +16,10 @@ export const get = async (req: Request, res: Response) => {
 
 export const create = async (req: Request, res: Response) => {
   const completePath = req.params[0]
-  const object: Obj = req.body.object
+
   try {
-    await connection.create(completePath, object, req.params.userId)
-    res.status(201).json({ message: 'Object successfully created' })
+    const obj = await connection.create(completePath, req.params.userId)
+    res.status(201).json({ message: 'Object successfully created', obj })
   } catch (e) {
     res.status(500).json({ message: 'An error has occurred' })
   }
@@ -27,10 +27,9 @@ export const create = async (req: Request, res: Response) => {
 
 export const save = async (req: Request, res: Response) => {
   const completePath = req.params[0]
-  const object: Obj = req.body.object
   try {
-    connection.save(completePath, object, req.params.userId)
-    res.status(200).json({ message: 'Object successfully saved' })
+    const obj: Obj = await connection.update(completePath, req.params.userId)
+    res.status(200).json({ message: obj.presignedUrl })
   } catch (e) {
     res.status(500).json({ message: 'An error has occurred' })
   }
