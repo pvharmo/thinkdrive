@@ -1,8 +1,4 @@
-import {
-  getConnection,
-  Obj,
-  ObjectNotFound,
-} from '../../connections/interfaces'
+import { getConnection, Obj } from '../../connections/interfaces'
 import { newConnection as newLocalStorageConnection } from '../../connections/localStorage'
 
 export interface Child {
@@ -14,10 +10,7 @@ export interface Connection {
   readonly store: (path: string, obj: Obj) => Promise<void>
 }
 
-export const get = async (
-  path: string,
-  userId: string
-): Promise<Obj | ObjectNotFound> => {
+export const get = async (path: string, userId: string): Promise<Obj> => {
   const [internalPath, distPath] = path.split('//')
 
   if (!distPath) {
