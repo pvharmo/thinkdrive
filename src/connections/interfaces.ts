@@ -8,6 +8,12 @@ export interface Obj {
   presignedUrl: PresignedUrl
 }
 
+export interface Metadata {
+  size: number
+  etag: string
+  lastModified: Date
+}
+
 export interface ObjectNotFound {
   readonly msg: string
 }
@@ -27,6 +33,7 @@ export interface StandardConnection {
   readonly getContainerContent: (path: string) => Promise<Child[]>
   readonly saveContainer: (path: string) => Promise<void>
   readonly destroyContainer: (path: string) => Promise<void>
+  readonly getMetadata: (path: string) => Promise<Metadata>
 }
 
 export const getConnection = async (internalPath: string, userId: string) => {

@@ -50,3 +50,14 @@ export const destroy = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'An error has occurred' })
   }
 }
+
+export const getMetadata = async (req: Request, res: Response) => {
+  const completePath = req.params[0]
+  try {
+    const obj = await connection.getMetadata(completePath, req.params.userId)
+    res.status(200).json(obj)
+  } catch (e) {
+    res.status(500).json({ message: 'An error has occurred' })
+    console.log(e)
+  }
+}

@@ -1,4 +1,4 @@
-import { getConnection, Obj } from '../../connections/interfaces'
+import { getConnection, Metadata, Obj } from '../../connections/interfaces'
 import { newConnection as newLocalStorageConnection } from '../../connections/localStorage'
 
 export interface Child {
@@ -15,7 +15,7 @@ export const get = async (path: string, userId: string): Promise<Obj> => {
 
   if (!distPath) {
     const connection = await newLocalStorageConnection(userId, userId)
-    return connection.get(internalPath)
+    return await connection.get(internalPath)
   } else {
     const connection = await getConnection(internalPath, userId)
     return await connection.get(distPath)
@@ -52,5 +52,20 @@ export const destroy = async (path: string, userId: string) => {
   } else {
     const connection = await getConnection(internalPath, userId)
     await connection.destroy(distPath)
+  }
+}
+
+export const getMetadata = async (
+  path: string,
+  userId: string
+): Promise<Metadata> => {
+  const [internalPath, distPath] = path.split('//')
+
+  if (!distPath) {
+    const connection = await newLocalStorageConnection(userId, userId)
+    return await connection.getMetadata(internalPath)
+  } else {
+    const connection = await getConnection(internalPath, userId)
+    return await connection.getMetadata(distPath)
   }
 }

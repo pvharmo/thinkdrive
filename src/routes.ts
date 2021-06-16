@@ -11,5 +11,8 @@ router.delete('/container/:userId/*', container.destroy)
 
 router.get('/object/:userId/*', obj.get)
 router.post('/object/:userId/*', obj.create)
+router.put('/object/:userId/*', obj.save)
+router.delete('/object/:userId/*', obj.destroy)
+router.get('/metadata/:userId/*', obj.getMetadata)
 
 export default router

@@ -12,6 +12,7 @@
         "dependabot",
         "editorconfig",
         "esnext",
+        "etag",
         "execa",
         "exponentiate",
         "globby",

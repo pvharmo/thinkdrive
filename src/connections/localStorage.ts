@@ -1,7 +1,13 @@
 import { Client } from 'minio'
 import { UniqueConstraintError } from 'sequelize'
 
-import { AlreadyExists, Child, Obj, StandardConnection } from './interfaces'
+import {
+  AlreadyExists,
+  Child,
+  Metadata,
+  Obj,
+  StandardConnection,
+} from './interfaces'
 
 const minio = new Client({
   endPoint: 'localhost',
@@ -68,6 +74,14 @@ export const createConnection = (_id: string, userId: string) => {
           return x.name
         })
       )
+    },
+    async getMetadata(path: string): Promise<Metadata> {
+      const metadata = await minio.statObject(userId, path)
+      return {
+        size: metadata.size,
+        etag: metadata.etag,
+        lastModified: metadata.lastModified,
+      }
     },
   }
 
