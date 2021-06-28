@@ -50,6 +50,7 @@ export const createConnection = (_id: string, userId: string) => {
           (child.name?.lastIndexOf('/') ||
             child.prefix?.slice(0, -1)?.lastIndexOf('/')) + 1
         children.push({
+          type: child.prefix ? 'container' : 'object',
           name:
             child.name?.substring(splitIndex) ||
             child.prefix?.slice(splitIndex, -1),
