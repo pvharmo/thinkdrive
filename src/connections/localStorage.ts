@@ -46,7 +46,19 @@ export const createConnection = (_id: string, userId: string) => {
       const childrenStream = minio.listObjectsV2(userId, path)
       const children = []
       for await (const child of childrenStream) {
-        children.push(child)
+        const splitIndex =
+          (child.name?.lastIndexOf('/') ||
+            child.prefix?.slice(0, -1)?.lastIndexOf('/')) + 1
+        children.push({
+          name:
+            child.name?.substring(splitIndex) ||
+            child.prefix?.slice(splitIndex, -1),
+          location:
+            '/' +
+            (child.name?.substring(0, splitIndex) ||
+              child.prefix?.substring(0, splitIndex)),
+          lastModified: child.lastModified,
+        })
       }
       return children
     },
