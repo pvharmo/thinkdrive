@@ -1,4 +1,4 @@
-import { Client } from 'minio'
+import { Client, CopyConditions } from 'minio'
 import { UniqueConstraintError } from 'sequelize'
 
 import {
@@ -40,6 +40,31 @@ export const createConnection = (_id: string, userId: string) => {
         } else {
           throw e
         }
+      }
+    },
+    async move(oldPath, newPath) {
+      const conditions = new CopyConditions()
+      if (oldPath[oldPath.length - 1] === '/') {
+        const childrenStream = minio.listObjectsV2(userId, oldPath)
+        for await (const child of childrenStream) {
+          if (child.name) {
+            const newName = child.name.replace(oldPath, newPath)
+            await minio.copyObject(
+              userId,
+              newName,
+              `/${userId}/${child.name}`,
+              conditions
+            )
+            await minio.removeObject(userId, child.name)
+          }
+        }
+      } else {
+        await minio.copyObject(
+          userId,
+          newPath,
+          `/${userId}/${oldPath}`,
+          conditions
+        )
       }
     },
     async getContainerContent(path: string): Promise<Child[]> {

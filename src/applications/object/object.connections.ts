@@ -69,3 +69,15 @@ export const getMetadata = async (
     return await connection.getMetadata(distPath)
   }
 }
+
+export const move = async (path: string, userId: string, newPath: string) => {
+  const [internalPath, distPath] = path.split('//')
+
+  if (!distPath) {
+    const connection = await newLocalStorageConnection(userId, userId)
+    return connection.move(internalPath, newPath)
+  } else {
+    const connection = await getConnection(internalPath, userId)
+    return await connection.move(distPath, newPath)
+  }
+}

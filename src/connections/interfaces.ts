@@ -30,6 +30,7 @@ export interface StandardConnection {
   readonly create: (path: string) => Promise<Obj>
   readonly update: (path: string) => Promise<Obj>
   readonly destroy: (path: string) => Promise<void>
+  readonly move: (oldPath: string, newPath: string) => Promise<void>
   readonly getContainerContent: (path: string) => Promise<Child[]>
   readonly saveContainer: (path: string) => Promise<void>
   readonly destroyContainer: (path: string) => Promise<void>

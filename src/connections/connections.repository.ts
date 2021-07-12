@@ -8,7 +8,6 @@ interface ConnectionAttributes {
   connection_id: string
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface UserCreationAttributes
   extends Optional<ConnectionAttributes, 'path'> {}
 

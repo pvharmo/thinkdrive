@@ -61,3 +61,15 @@ export const getMetadata = async (req: Request, res: Response) => {
     console.log(e)
   }
 }
+
+export const move = async (req: Request, res: Response) => {
+  const userId = req.params.userId
+
+  try {
+    await connection.move(req.params[0], userId, req.body.newPath)
+    res.status(200).json({ message: 'Container successfully deleted' })
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ message: 'An error has occurred.' })
+  }
+}
