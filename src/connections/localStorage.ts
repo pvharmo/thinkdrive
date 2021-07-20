@@ -27,6 +27,7 @@ export const createConnection = (_id: string, userId: string) => {
       return { presignedUrl }
     },
     async destroy(path: string): Promise<void> {
+      this.updateSharingStatus(path, {})
       await minio.removeObject(userId, path)
     },
     async update(path: string): Promise<Obj> {
@@ -110,6 +111,10 @@ export const createConnection = (_id: string, userId: string) => {
       const childrenStream = minio.listObjectsV2(userId, path, true)
       const children = []
       for await (const child of childrenStream) {
+        this.updateSharingStatus(
+          child.name.replace('.thinkdrive.container', ''),
+          {}
+        )
         children.push(child)
       }
       await minio.removeObjects(
@@ -134,15 +139,25 @@ export const createConnection = (_id: string, userId: string) => {
       })
 
       if (status !== null) {
-        await SharingStatusModel.update(
-          { scopes: sharingStatus },
-          { where: { path: fullPath } }
-        )
+        if (!sharingStatus.globalScopes && !sharingStatus.usersScope) {
+          await SharingStatusModel.destroy({
+            where: {
+              path: fullPath,
+            },
+          })
+        } else {
+          await SharingStatusModel.update(
+            { scopes: sharingStatus },
+            { where: { path: fullPath } }
+          )
+        }
       } else {
-        await SharingStatusModel.create({
-          path: fullPath,
-          scopes: sharingStatus,
-        })
+        if (!!sharingStatus.globalScopes || !!sharingStatus.usersScope) {
+          await SharingStatusModel.create({
+            path: fullPath,
+            scopes: sharingStatus,
+          })
+        }
       }
     },
     async getSharingStatus(path) {
