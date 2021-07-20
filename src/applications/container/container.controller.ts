@@ -1,21 +1,32 @@
 import { Request, Response } from 'express'
 
-import { AlreadyExists, NotFound } from '../../connections/interfaces'
-
-import * as connection from './container.connections'
+import {
+  AlreadyExists,
+  NotFound,
+  pathToConnection,
+} from '../../connections/interfaces'
 
 export const get = async (req: Request, res: Response) => {
   const completePath = req.params[0]
-  const object = await connection.get(completePath, req.params.userId)
+
+  const { connection, path } = await pathToConnection(
+    completePath,
+    req.params.userId
+  )
+  const object = await connection.getContainerContent(path)
 
   res.status(200).json(object)
 }
 
 export const save = async (req: Request, res: Response) => {
-  const userId = req.params.userId
+  const completePath = req.params[0]
 
   try {
-    await connection.save(req.params[0], userId)
+    const { connection, path } = await pathToConnection(
+      completePath,
+      req.params.userId
+    )
+    await connection.saveContainer(path)
     res.status(201).json({ message: 'Container successfully created' })
   } catch (e) {
     if (e instanceof NotFound) {
@@ -29,10 +40,14 @@ export const save = async (req: Request, res: Response) => {
 }
 
 export const destroy = async (req: Request, res: Response) => {
-  const userId = req.params.userId
+  const completePath = req.params[0]
 
   try {
-    await connection.destroy(req.params[0], userId)
+    const { connection, path } = await pathToConnection(
+      completePath,
+      req.params.userId
+    )
+    await connection.destroyContainer(path)
     res.status(200).json({ message: 'Container successfully deleted' })
   } catch (e) {
     console.error(e)
@@ -41,10 +56,14 @@ export const destroy = async (req: Request, res: Response) => {
 }
 
 export const move = async (req: Request, res: Response) => {
-  const userId = req.params.userId
+  const completePath = req.params[0]
 
   try {
-    await connection.move(req.params[0], userId, req.body.newPath)
+    const { connection, path } = await pathToConnection(
+      completePath,
+      req.params.userId
+    )
+    await connection.move(path, req.body.newPath)
     res.status(200).json({ message: 'Container successfully deleted' })
   } catch (e) {
     console.error(e)

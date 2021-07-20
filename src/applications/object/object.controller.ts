@@ -1,13 +1,15 @@
 import { Request, Response } from 'express'
 
-import { Obj } from '../../connections/interfaces'
-
-import * as connection from './object.connections'
+import { Obj, pathToConnection } from '../../connections/interfaces'
 
 export const get = async (req: Request, res: Response) => {
   const completePath = req.params[0]
   try {
-    const obj = await connection.get(completePath, req.params.userId)
+    const { connection, path } = await pathToConnection(
+      completePath,
+      req.params.userId
+    )
+    const obj = await connection.get(path)
     res.status(200).json({ presignedUrl: obj.presignedUrl })
   } catch (e) {
     res.status(500).json({ message: 'An error has occurred' })
@@ -16,9 +18,12 @@ export const get = async (req: Request, res: Response) => {
 
 export const create = async (req: Request, res: Response) => {
   const completePath = req.params[0]
-
   try {
-    const obj = await connection.create(completePath, req.params.userId)
+    const { connection, path } = await pathToConnection(
+      completePath,
+      req.params.userId
+    )
+    const obj = await connection.create(path)
     res.status(201).json({
       message: 'Object successfully created',
       presignedUrl: obj.presignedUrl,
@@ -31,7 +36,11 @@ export const create = async (req: Request, res: Response) => {
 export const save = async (req: Request, res: Response) => {
   const completePath = req.params[0]
   try {
-    const obj: Obj = await connection.update(completePath, req.params.userId)
+    const { connection, path } = await pathToConnection(
+      completePath,
+      req.params.userId
+    )
+    const obj: Obj = await connection.update(path)
     res.status(200).json({
       message: 'Object successfully saved',
       presignedUrl: obj.presignedUrl,
@@ -44,7 +53,11 @@ export const save = async (req: Request, res: Response) => {
 export const destroy = async (req: Request, res: Response) => {
   const completePath = req.params[0]
   try {
-    await connection.destroy(completePath, req.params.userId)
+    const { connection, path } = await pathToConnection(
+      completePath,
+      req.params.userId
+    )
+    await connection.destroy(path)
     res.status(200).json({ message: 'Object successfully deleted' })
   } catch (e) {
     res.status(500).json({ message: 'An error has occurred' })
@@ -54,7 +67,11 @@ export const destroy = async (req: Request, res: Response) => {
 export const getMetadata = async (req: Request, res: Response) => {
   const completePath = req.params[0]
   try {
-    const obj = await connection.getMetadata(completePath, req.params.userId)
+    const { connection, path } = await pathToConnection(
+      completePath,
+      req.params.userId
+    )
+    const obj = await connection.getMetadata(path)
     res.status(200).json(obj)
   } catch (e) {
     res.status(500).json({ message: 'An error has occurred' })
@@ -63,10 +80,14 @@ export const getMetadata = async (req: Request, res: Response) => {
 }
 
 export const move = async (req: Request, res: Response) => {
-  const userId = req.params.userId
+  const completePath = req.params[0]
 
   try {
-    await connection.move(req.params[0], userId, req.body.newPath)
+    const { connection, path } = await pathToConnection(
+      completePath,
+      req.params.userId
+    )
+    await connection.move(path, req.body.newPath)
     res.status(200).json({ message: 'Container successfully deleted' })
   } catch (e) {
     console.error(e)

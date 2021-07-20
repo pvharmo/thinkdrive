@@ -1,4 +1,5 @@
-import ConnectionModel from './connections.repository'
+import ConnectionModel from '../models/Connection.model'
+
 import { newConnection as newLocalStorageConnection } from './localStorage'
 import { newConnection as newS3Connection } from './s3'
 
@@ -35,6 +36,45 @@ export interface StandardConnection {
   readonly saveContainer: (path: string) => Promise<void>
   readonly destroyContainer: (path: string) => Promise<void>
   readonly getMetadata: (path: string) => Promise<Metadata>
+}
+
+export interface userScope {
+  userId: string
+  scopes: string[]
+}
+
+export interface SharingStatus {
+  globalScopes?: string[]
+  usersScope?: userScope[]
+}
+
+export interface Shareable {
+  readonly updateSharingStatus: (
+    path: string,
+    sharingStatus: SharingStatus
+  ) => Promise<void>
+  readonly getSharingStatus: (path: string) => Promise<SharingStatus>
+}
+
+export const pathToConnection = async (path: string, userId: string) => {
+  const [internalPath, distPath] = path.split('//')
+
+  if (!distPath) {
+    const connection = await newLocalStorageConnection(userId, userId)
+    return {
+      connection,
+      path: internalPath,
+    }
+  } else {
+    const connection: StandardConnection & Shareable = await getConnection(
+      internalPath,
+      userId
+    )
+    return {
+      connection,
+      path: distPath,
+    }
+  }
 }
 
 export const getConnection = async (internalPath: string, userId: string) => {

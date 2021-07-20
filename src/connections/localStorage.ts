@@ -1,12 +1,16 @@
 import { Client, CopyConditions } from 'minio'
 import { UniqueConstraintError } from 'sequelize'
 
+import SharingStatusModel from '../models/SharingStatus.model'
+
 import {
   AlreadyExists,
   Child,
   Metadata,
   Obj,
   StandardConnection,
+  Shareable,
+  SharingStatus,
 } from './interfaces'
 
 const minio = new Client({
@@ -18,7 +22,7 @@ const minio = new Client({
 })
 
 export const createConnection = (_id: string, userId: string) => {
-  const connection: StandardConnection = {
+  const connection: StandardConnection & Shareable = {
     async get(path: string): Promise<Obj> {
       const presignedUrl = await minio.presignedGetObject(userId, path)
       return { presignedUrl }
@@ -89,6 +93,9 @@ export const createConnection = (_id: string, userId: string) => {
       return children
     },
     async saveContainer(path: string): Promise<void> {
+      if (path.slice(-1) !== '/') {
+        path += '/'
+      }
       try {
         await minio.putObject(userId, path + '.thinkdrive.container', '')
         console.log('container saved locally')
@@ -121,6 +128,40 @@ export const createConnection = (_id: string, userId: string) => {
         lastModified: metadata.lastModified,
       }
     },
+    async updateSharingStatus(path, sharingStatus) {
+      const fullPath = '/' + userId + '/' + path
+      const status = await SharingStatusModel.findOne({
+        where: { path: fullPath },
+      })
+
+      if (status !== null) {
+        await SharingStatusModel.update(
+          { scopes: sharingStatus },
+          { where: { path: fullPath } }
+        )
+      } else {
+        await SharingStatusModel.create({
+          path: fullPath,
+          scopes: sharingStatus,
+        })
+      }
+    },
+    async getSharingStatus(path) {
+      const pathSplit = path.split('/')
+      let sharingStatus
+      for (let pathLength = 0; pathLength < pathSplit.length; pathLength++) {
+        const searchPath =
+          '/' + userId + '/' + pathSplit.slice(0, -pathLength).join('/') + '/'
+        sharingStatus = await SharingStatusModel.findOne({
+          where: { path: searchPath },
+        })
+
+        if (sharingStatus) {
+          break
+        }
+      }
+      return sharingStatus?.scopes as SharingStatus
+    },
   }
 
   return connection
@@ -129,6 +170,6 @@ export const createConnection = (_id: string, userId: string) => {
 export const newConnection = async (
   id: string,
   userId: string
-): Promise<StandardConnection> => {
+): Promise<StandardConnection & Shareable> => {
   return createConnection(id, userId)
 }

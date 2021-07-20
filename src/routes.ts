@@ -2,6 +2,7 @@ import { Router } from 'express'
 
 import * as container from './applications/container/container.controller'
 import * as obj from './applications/object/object.controller'
+import * as share from './applications/share/share.controller'
 
 const router: Router = Router()
 
@@ -17,5 +18,8 @@ router.delete('/object/:userId/*', obj.destroy)
 router.put('/object/:userId/*', obj.move)
 
 router.get('/metadata/:userId/*', obj.getMetadata)
+
+router.get('/share/:userId/*', share.getStatus)
+router.put('/share/:userId/*', share.setStatus)
 
 export default router

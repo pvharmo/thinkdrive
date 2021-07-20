@@ -1,27 +1,23 @@
-import { Sequelize } from 'sequelize'
+import { Sequelize } from 'sequelize-typescript'
 
-import { init as initConnectionModel } from './connections/connections.repository'
-import runMigrations from './migrations/migration'
+import Connection from './models/Connection.model'
+import SharingStatus from './models/SharingStatus.model'
 
-const sequelize = new Sequelize(process.env.DB_CONNECTION_STRING as string)
+const connection = new Sequelize(process.env.DB_CONNECTION_STRING as string)
 
 const initializeDb = async () => {
   try {
-    await sequelize.authenticate()
+    await connection.authenticate()
     console.log('Database connection has been established successfully.')
   } catch (error) {
     console.error('Unable to connect to the database:', error)
   }
-  await initConnectionModel()
+  connection.addModels([SharingStatus, Connection])
+  connection.sync()
   console.log('running migrations')
-  try {
-    await runMigrations()
-  } catch {
-    console.error('An error has occurred while running migrations')
-  }
   console.log('Migrations completed successfully')
 }
 
 initializeDb()
 
-export default sequelize
+export default connection
