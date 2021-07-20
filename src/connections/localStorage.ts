@@ -10,7 +10,6 @@ import {
   Obj,
   StandardConnection,
   Shareable,
-  SharingStatus,
 } from './interfaces'
 
 const minio = new Client({
@@ -147,11 +146,13 @@ export const createConnection = (_id: string, userId: string) => {
       }
     },
     async getSharingStatus(path) {
+      const isContainer = path[path.length - 1] === '/'
       const pathSplit = path.split('/')
       let sharingStatus
       for (let pathLength = 0; pathLength < pathSplit.length; pathLength++) {
-        const searchPath =
-          '/' + userId + '/' + pathSplit.slice(0, -pathLength).join('/') + '/'
+        const localPath = pathSplit.slice(0, -pathLength).join('/')
+        const searchPath = `/${userId}/${localPath}${isContainer ? '/' : ''}`
+
         sharingStatus = await SharingStatusModel.findOne({
           where: { path: searchPath },
         })
@@ -160,7 +161,13 @@ export const createConnection = (_id: string, userId: string) => {
           break
         }
       }
-      return sharingStatus?.scopes as SharingStatus
+      if (sharingStatus) {
+        return sharingStatus.scopes
+      }
+      return {
+        globalScopes: [],
+        usersScope: [],
+      }
     },
   }
 
