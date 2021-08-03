@@ -86,7 +86,8 @@ export const createConnection = (_id: string, userId: string) => {
           location:
             '/' +
             (child.name?.substring(0, splitIndex) ||
-              child.prefix?.substring(0, splitIndex)),
+              child.prefix?.substring(0, splitIndex) ||
+              ''),
           lastModified: child.lastModified,
         })
       }
