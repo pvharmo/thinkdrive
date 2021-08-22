@@ -1,15 +1,12 @@
 import { Client, CopyConditions } from 'minio'
 import { UniqueConstraintError } from 'sequelize'
 
-import SharingStatusModel from '../models/SharingStatus.model'
-
 import {
   AlreadyExists,
   Child,
   Metadata,
   Obj,
   StandardConnection,
-  Shareable,
 } from './interfaces'
 
 const minio = new Client({
@@ -21,30 +18,17 @@ const minio = new Client({
 })
 
 export const createConnection = (_id: string, userId: string) => {
-  const connection: StandardConnection & Shareable = {
+  const connection: StandardConnection = {
     async get(path: string): Promise<Obj> {
       const presignedUrl = await minio.presignedGetObject(userId, path)
       return { presignedUrl }
     },
     async destroy(path: string): Promise<void> {
-      this.updateSharingStatus(path, {})
       await minio.removeObject(userId, path)
     },
-    async update(path: string): Promise<Obj> {
+    async upsert(path: string): Promise<Obj> {
       const presignedUrl = await minio.presignedPutObject(userId, path, 30)
       return { presignedUrl }
-    },
-    async create(path: string): Promise<Obj> {
-      try {
-        const presignedUrl = await minio.presignedPutObject(userId, path, 30)
-        return { presignedUrl }
-      } catch (e) {
-        if (e instanceof UniqueConstraintError) {
-          throw new AlreadyExists()
-        } else {
-          throw e
-        }
-      }
     },
     async move(oldPath, newPath) {
       const conditions = new CopyConditions()
@@ -69,6 +53,7 @@ export const createConnection = (_id: string, userId: string) => {
           `/${userId}/${oldPath}`,
           conditions
         )
+        await minio.removeObject(userId, oldPath)
       }
     },
     async getContainerContent(path: string): Promise<Child[]> {
@@ -112,10 +97,6 @@ export const createConnection = (_id: string, userId: string) => {
       const childrenStream = minio.listObjectsV2(userId, path, true)
       const children = []
       for await (const child of childrenStream) {
-        this.updateSharingStatus(
-          child.name.replace('.thinkdrive.container', ''),
-          {}
-        )
         children.push(child)
       }
       await minio.removeObjects(
@@ -133,58 +114,6 @@ export const createConnection = (_id: string, userId: string) => {
         lastModified: metadata.lastModified,
       }
     },
-    async updateSharingStatus(path, sharingStatus) {
-      const fullPath = '/' + userId + '/' + path
-      const status = await SharingStatusModel.findOne({
-        where: { path: fullPath },
-      })
-
-      if (status !== null) {
-        if (!sharingStatus.globalScopes && !sharingStatus.usersScope) {
-          await SharingStatusModel.destroy({
-            where: {
-              path: fullPath,
-            },
-          })
-        } else {
-          await SharingStatusModel.update(
-            { scopes: sharingStatus },
-            { where: { path: fullPath } }
-          )
-        }
-      } else {
-        if (!!sharingStatus.globalScopes || !!sharingStatus.usersScope) {
-          await SharingStatusModel.create({
-            path: fullPath,
-            scopes: sharingStatus,
-          })
-        }
-      }
-    },
-    async getSharingStatus(path) {
-      const isContainer = path[path.length - 1] === '/'
-      const pathSplit = path.split('/')
-      let sharingStatus
-      for (let pathLength = 0; pathLength < pathSplit.length; pathLength++) {
-        const localPath = pathSplit.slice(0, -pathLength).join('/')
-        const searchPath = `/${userId}/${localPath}${isContainer ? '/' : ''}`
-
-        sharingStatus = await SharingStatusModel.findOne({
-          where: { path: searchPath },
-        })
-
-        if (sharingStatus) {
-          break
-        }
-      }
-      if (sharingStatus) {
-        return sharingStatus.scopes
-      }
-      return {
-        globalScopes: [],
-        usersScope: [],
-      }
-    },
   }
 
   return connection
@@ -193,6 +122,6 @@ export const createConnection = (_id: string, userId: string) => {
 export const newConnection = async (
   id: string,
   userId: string
-): Promise<StandardConnection & Shareable> => {
+): Promise<StandardConnection> => {
   return createConnection(id, userId)
 }
