@@ -16,19 +16,20 @@ export const get = async (req: Request, res: Response) => {
   }
 }
 
-export const create = async (req: Request, res: Response) => {
+export const upsert = async (req: Request, res: Response) => {
   const completePath = req.params[0]
   try {
     const { connection, path } = await pathToConnection(
       completePath,
       req.params.userId
     )
-    const obj = await connection.create(path)
+    const obj = await connection.upsert(path)
     res.status(201).json({
       message: 'Object successfully created',
       presignedUrl: obj.presignedUrl,
     })
   } catch (e) {
+    console.error(e)
     res.status(500).json({ message: 'An error has occurred' })
   }
 }
@@ -40,7 +41,7 @@ export const save = async (req: Request, res: Response) => {
       completePath,
       req.params.userId
     )
-    const obj: Obj = await connection.update(path)
+    const obj: Obj = await connection.upsert(path)
     res.status(200).json({
       message: 'Object successfully saved',
       presignedUrl: obj.presignedUrl,

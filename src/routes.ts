@@ -12,10 +12,10 @@ router.delete('/container/:userId/*', container.destroy)
 router.put('/container/:userId/*', container.move)
 
 router.get('/object/:userId/*', obj.get)
-router.post('/object/:userId/*', obj.create)
+router.post('/object/:userId/*', obj.upsert)
+router.put('/object/:userId/*', obj.move)
 router.put('/object/:userId/*', obj.save)
 router.delete('/object/:userId/*', obj.destroy)
-router.put('/object/:userId/*', obj.move)
 
 router.get('/metadata/:userId/*', obj.getMetadata)
 

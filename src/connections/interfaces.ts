@@ -1,5 +1,3 @@
-import ConnectionModel from '../models/Connection.model'
-
 import { newConnection as newLocalStorageConnection } from './localStorage'
 import { newConnection as newS3Connection } from './s3'
 
@@ -28,8 +26,7 @@ export class AlreadyExists extends Error {}
 
 export interface StandardConnection {
   readonly get: (path: string) => Promise<Obj>
-  readonly create: (path: string) => Promise<Obj>
-  readonly update: (path: string) => Promise<Obj>
+  readonly upsert: (path: string) => Promise<Obj>
   readonly destroy: (path: string) => Promise<void>
   readonly move: (oldPath: string, newPath: string) => Promise<void>
   readonly getContainerContent: (path: string) => Promise<Child[]>
@@ -43,19 +40,6 @@ export interface userScope {
   scopes: string[]
 }
 
-export interface SharingStatus {
-  globalScopes?: string[]
-  usersScope?: userScope[]
-}
-
-export interface Shareable {
-  readonly updateSharingStatus: (
-    path: string,
-    sharingStatus: SharingStatus
-  ) => Promise<void>
-  readonly getSharingStatus: (path: string) => Promise<SharingStatus>
-}
-
 export const pathToConnection = async (path: string, userId: string) => {
   const [internalPath, distPath] = path.split('//')
 
@@ -66,7 +50,7 @@ export const pathToConnection = async (path: string, userId: string) => {
       path: internalPath,
     }
   } else {
-    const connection: StandardConnection & Shareable = await getConnection(
+    const connection: StandardConnection = await getConnection(
       internalPath,
       userId
     )
@@ -78,9 +62,10 @@ export const pathToConnection = async (path: string, userId: string) => {
 }
 
 export const getConnection = async (internalPath: string, userId: string) => {
-  const connectionResult = await ConnectionModel.findOne({
-    where: { path: userId + '/' + internalPath },
-  })
+  const connectionResult = {
+    connection_type: 'local',
+    connection_id: '',
+  }
 
   if (connectionResult) {
     return toConnection(

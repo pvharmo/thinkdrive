@@ -28,12 +28,7 @@ export const newConnection = async (
       }
       return children
     },
-    async create(path: string) {
-      return {
-        presignedUrl: await minio.presignedPutObject(userId, path),
-      }
-    },
-    async update(path: string) {
+    async upsert(path: string) {
       return {
         presignedUrl: await minio.presignedPutObject(userId, path),
       }

@@ -1,7 +1,6 @@
 import express from 'express'
 import cors from 'cors'
 
-import './db'
 import routes from './routes'
 
 const app = express()
@@ -14,5 +13,5 @@ app.use(routes)
 const port = 3000
 
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`)
+  console.log(`App listening at http://localhost:${port}`)
 })
