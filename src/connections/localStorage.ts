@@ -80,7 +80,7 @@ export const createConnection = (_id: string, userId: string) => {
       return children
     },
     async saveContainer(path): Promise<void> {
-      await minio.putObject(userId, path + '.thinkdrive.container', '')
+      await minio.putObject(userId, path.path + '/.thinkdrive.container', '')
     },
     async destroyContainer(path): Promise<void> {
       const childrenStream = minio.listObjectsV2(userId, path.path, true)
@@ -110,7 +110,7 @@ export const createConnection = (_id: string, userId: string) => {
         fileContent += value
       }
       const restore = JSON.parse(fileContent)
-      const newPath = new Path(`.trash/` + path.name)
+      const newPath = new Path(`.trash/` + path.name + '/')
       await this.move(path, newPath)
       restore[newPath.path] = path
       minio.putObject(userId, '.trash/.restore.json', JSON.stringify(restore))
