@@ -7,6 +7,7 @@ import {
   Metadata,
   Obj,
   StandardConnection,
+  TrashableConnection,
 } from './interfaces'
 
 const minio = new Client({
@@ -18,7 +19,7 @@ const minio = new Client({
 })
 
 export const createConnection = (_id: string, userId: string) => {
-  const connection: StandardConnection = {
+  const connection: StandardConnection & TrashableConnection = {
     async get(path: string): Promise<Obj> {
       const presignedUrl = await minio.presignedGetObject(userId, path)
       return { presignedUrl }
@@ -114,6 +115,9 @@ export const createConnection = (_id: string, userId: string) => {
         lastModified: metadata.lastModified,
       }
     },
+    async trash(path: string): Promise<void> {
+      this.move(path, `${userId}/.trash${path}`)
+    },
   }
 
   return connection
@@ -122,6 +126,6 @@ export const createConnection = (_id: string, userId: string) => {
 export const newConnection = async (
   id: string,
   userId: string
-): Promise<StandardConnection> => {
+): Promise<StandardConnection & TrashableConnection> => {
   return createConnection(id, userId)
 }

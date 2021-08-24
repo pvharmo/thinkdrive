@@ -35,12 +35,16 @@ export interface StandardConnection {
   readonly getMetadata: (path: string) => Promise<Metadata>
 }
 
+export interface TrashableConnection {
+  readonly trash: (path: string) => Promise<void>
+}
+
 export interface userScope {
   userId: string
   scopes: string[]
 }
 
-export const pathToConnection = async (path: string, userId: string) => {
+export const getTrashableConnection = async (path: string, userId: string) => {
   const [internalPath, distPath] = path.split('//')
 
   if (!distPath) {
@@ -50,7 +54,7 @@ export const pathToConnection = async (path: string, userId: string) => {
       path: internalPath,
     }
   } else {
-    const connection: StandardConnection = await getConnection(
+    const connection: TrashableConnection = await findConnection(
       internalPath,
       userId
     )
@@ -61,7 +65,28 @@ export const pathToConnection = async (path: string, userId: string) => {
   }
 }
 
-export const getConnection = async (internalPath: string, userId: string) => {
+export const getStandardConnection = async (path: string, userId: string) => {
+  const [internalPath, distPath] = path.split('//')
+
+  if (!distPath) {
+    const connection = await newLocalStorageConnection(userId, userId)
+    return {
+      connection,
+      path: internalPath,
+    }
+  } else {
+    const connection: StandardConnection = await findConnection(
+      internalPath,
+      userId
+    )
+    return {
+      connection,
+      path: distPath,
+    }
+  }
+}
+
+export const findConnection = async (internalPath: string, userId: string) => {
   const connectionResult = {
     connection_type: 'local',
     connection_id: '',

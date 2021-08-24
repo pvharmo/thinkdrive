@@ -3,13 +3,14 @@ import { Request, Response } from 'express'
 import {
   AlreadyExists,
   NotFound,
-  pathToConnection,
+  getStandardConnection,
+  getTrashableConnection,
 } from '../../connections/interfaces'
 
 export const get = async (req: Request, res: Response) => {
   const completePath = req.params[0]
 
-  const { connection, path } = await pathToConnection(
+  const { connection, path } = await getStandardConnection(
     completePath,
     req.params.userId
   )
@@ -22,7 +23,7 @@ export const save = async (req: Request, res: Response) => {
   const completePath = req.params[0]
 
   try {
-    const { connection, path } = await pathToConnection(
+    const { connection, path } = await getStandardConnection(
       completePath,
       req.params.userId
     )
@@ -43,7 +44,7 @@ export const destroy = async (req: Request, res: Response) => {
   const completePath = req.params[0]
 
   try {
-    const { connection, path } = await pathToConnection(
+    const { connection, path } = await getStandardConnection(
       completePath,
       req.params.userId
     )
@@ -59,11 +60,27 @@ export const move = async (req: Request, res: Response) => {
   const completePath = req.params[0]
 
   try {
-    const { connection, path } = await pathToConnection(
+    const { connection, path } = await getStandardConnection(
       completePath,
       req.params.userId
     )
     await connection.move(path, req.body.newPath)
+    res.status(200).json({ message: 'Container successfully deleted' })
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ message: 'An error has occurred.' })
+  }
+}
+
+export const trash = async (req: Request, res: Response) => {
+  const completePath = req.params[0]
+
+  try {
+    const { connection, path } = await getTrashableConnection(
+      completePath,
+      req.params.userId
+    )
+    await connection.trash(path)
     res.status(200).json({ message: 'Container successfully deleted' })
   } catch (e) {
     console.error(e)
