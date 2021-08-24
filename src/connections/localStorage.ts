@@ -3,7 +3,6 @@ import { Client, CopyConditions } from 'minio'
 import { Path } from '../path'
 
 import {
-  AlreadyExists,
   Child,
   Metadata,
   Obj,
@@ -38,7 +37,7 @@ export const createConnection = (_id: string, userId: string) => {
         const childrenStream = minio.listObjectsV2(userId, oldPath.path, true)
         for await (const child of childrenStream) {
           if (child.name) {
-            const newName = child.name.replace(oldPath, newPath)
+            const newName = child.name.replace(oldPath.path, newPath.path)
             await minio.copyObject(
               userId,
               newName,
@@ -52,7 +51,7 @@ export const createConnection = (_id: string, userId: string) => {
         await minio.copyObject(
           userId,
           newPath.path,
-          `/${userId}/${oldPath}`,
+          `/${userId}/${oldPath.path}`,
           conditions
         )
         await minio.removeObject(userId, oldPath.path)

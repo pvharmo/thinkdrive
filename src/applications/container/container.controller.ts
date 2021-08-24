@@ -6,6 +6,7 @@ import {
   getStandardConnection,
   getTrashableConnection,
 } from '../../connections/interfaces'
+import { Path } from '../../path'
 
 export const get = async (req: Request, res: Response) => {
   const completePath = req.params[0]
@@ -64,7 +65,7 @@ export const move = async (req: Request, res: Response) => {
       completePath,
       req.params.userId
     )
-    await connection.move(path, req.body.newPath)
+    await connection.move(path, new Path(req.body.newPath))
     res.status(200).json({ message: 'Container successfully deleted' })
   } catch (e) {
     console.error(e)
