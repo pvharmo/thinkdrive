@@ -1,5 +1,6 @@
 import { Client, CopyConditions } from 'minio'
-import { UniqueConstraintError } from 'sequelize'
+
+import { Path } from '../path'
 
 import {
   AlreadyExists,
@@ -20,21 +21,21 @@ const minio = new Client({
 
 export const createConnection = (_id: string, userId: string) => {
   const connection: StandardConnection & TrashableConnection = {
-    async get(path: string): Promise<Obj> {
-      const presignedUrl = await minio.presignedGetObject(userId, path)
+    async get(path): Promise<Obj> {
+      const presignedUrl = await minio.presignedGetObject(userId, path.path)
       return { presignedUrl }
     },
-    async destroy(path: string): Promise<void> {
-      await minio.removeObject(userId, path)
+    async destroy(path): Promise<void> {
+      await minio.removeObject(userId, path.path)
     },
-    async upsert(path: string): Promise<Obj> {
-      const presignedUrl = await minio.presignedPutObject(userId, path, 30)
+    async upsert(path): Promise<Obj> {
+      const presignedUrl = await minio.presignedPutObject(userId, path.path, 30)
       return { presignedUrl }
     },
     async move(oldPath, newPath) {
       const conditions = new CopyConditions()
-      if (oldPath[oldPath.length - 1] === '/') {
-        const childrenStream = minio.listObjectsV2(userId, oldPath, true)
+      if (oldPath.isFolder) {
+        const childrenStream = minio.listObjectsV2(userId, oldPath.path, true)
         for await (const child of childrenStream) {
           if (child.name) {
             const newName = child.name.replace(oldPath, newPath)
@@ -50,15 +51,15 @@ export const createConnection = (_id: string, userId: string) => {
       } else {
         await minio.copyObject(
           userId,
-          newPath,
+          newPath.path,
           `/${userId}/${oldPath}`,
           conditions
         )
-        await minio.removeObject(userId, oldPath)
+        await minio.removeObject(userId, oldPath.path)
       }
     },
-    async getContainerContent(path: string): Promise<Child[]> {
-      const childrenStream = minio.listObjectsV2(userId, path)
+    async getContainerContent(path): Promise<Child[]> {
+      const childrenStream = minio.listObjectsV2(userId, path.path)
       const children = []
       for await (const child of childrenStream) {
         const splitIndex =
@@ -79,23 +80,11 @@ export const createConnection = (_id: string, userId: string) => {
       }
       return children
     },
-    async saveContainer(path: string): Promise<void> {
-      if (path.slice(-1) !== '/') {
-        path += '/'
-      }
-      try {
-        await minio.putObject(userId, path + '.thinkdrive.container', '')
-        console.log('container saved locally')
-      } catch (e) {
-        if (e instanceof UniqueConstraintError) {
-          throw new AlreadyExists()
-        } else {
-          throw e
-        }
-      }
+    async saveContainer(path): Promise<void> {
+      await minio.putObject(userId, path + '.thinkdrive.container', '')
     },
-    async destroyContainer(path: string): Promise<void> {
-      const childrenStream = minio.listObjectsV2(userId, path, true)
+    async destroyContainer(path): Promise<void> {
+      const childrenStream = minio.listObjectsV2(userId, path.path, true)
       const children = []
       for await (const child of childrenStream) {
         children.push(child)
@@ -107,16 +96,25 @@ export const createConnection = (_id: string, userId: string) => {
         })
       )
     },
-    async getMetadata(path: string): Promise<Metadata> {
-      const metadata = await minio.statObject(userId, path)
+    async getMetadata(path): Promise<Metadata> {
+      const metadata = await minio.statObject(userId, path.path)
       return {
         size: metadata.size,
         etag: metadata.etag,
         lastModified: metadata.lastModified,
       }
     },
-    async trash(path: string): Promise<void> {
-      this.move(path, `.trash/${path}`)
+    async trash(path): Promise<void> {
+      const fileStream = await minio.getObject(userId, '.trash/.restore.json')
+      let fileContent = ''
+      for await (const value of fileStream) {
+        fileContent += value
+      }
+      const restore = JSON.parse(fileContent)
+      const newPath = new Path(`.trash/` + path.name)
+      await this.move(path, newPath)
+      restore[newPath.path] = path
+      minio.putObject(userId, '.trash/.restore.json', JSON.stringify(restore))
     },
   }
 

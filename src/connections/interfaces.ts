@@ -1,3 +1,5 @@
+import { Path } from '../path'
+
 import { newConnection as newLocalStorageConnection } from './localStorage'
 import { newConnection as newS3Connection } from './s3'
 
@@ -25,18 +27,18 @@ export class NotFound extends Error {}
 export class AlreadyExists extends Error {}
 
 export interface StandardConnection {
-  readonly get: (path: string) => Promise<Obj>
-  readonly upsert: (path: string) => Promise<Obj>
-  readonly destroy: (path: string) => Promise<void>
-  readonly move: (oldPath: string, newPath: string) => Promise<void>
-  readonly getContainerContent: (path: string) => Promise<Child[]>
-  readonly saveContainer: (path: string) => Promise<void>
-  readonly destroyContainer: (path: string) => Promise<void>
-  readonly getMetadata: (path: string) => Promise<Metadata>
+  readonly get: (path: Path) => Promise<Obj>
+  readonly upsert: (path: Path) => Promise<Obj>
+  readonly destroy: (path: Path) => Promise<void>
+  readonly move: (oldPath: Path, newPath: Path) => Promise<void>
+  readonly getContainerContent: (path: Path) => Promise<Child[]>
+  readonly saveContainer: (path: Path) => Promise<void>
+  readonly destroyContainer: (path: Path) => Promise<void>
+  readonly getMetadata: (path: Path) => Promise<Metadata>
 }
 
 export interface TrashableConnection {
-  readonly trash: (path: string) => Promise<void>
+  readonly trash: (path: Path) => Promise<void>
 }
 
 export interface userScope {
@@ -45,9 +47,11 @@ export interface userScope {
 }
 
 export const getTrashableConnection = async (path: string, userId: string) => {
-  const [internalPath, distPath] = path.split('//')
+  const pathSplit = path.split('//')
+  const internalPath = new Path(pathSplit[0])
+  const distPath = new Path(pathSplit[1])
 
-  if (!distPath) {
+  if (!distPath.isEmpty) {
     const connection = await newLocalStorageConnection(userId, userId)
     return {
       connection,
@@ -66,9 +70,11 @@ export const getTrashableConnection = async (path: string, userId: string) => {
 }
 
 export const getStandardConnection = async (path: string, userId: string) => {
-  const [internalPath, distPath] = path.split('//')
+  const pathSplit = path.split('//')
+  const internalPath = new Path(pathSplit[0])
+  const distPath = new Path(pathSplit[1])
 
-  if (!distPath) {
+  if (!distPath.isEmpty) {
     const connection = await newLocalStorageConnection(userId, userId)
     return {
       connection,
@@ -86,7 +92,7 @@ export const getStandardConnection = async (path: string, userId: string) => {
   }
 }
 
-export const findConnection = async (internalPath: string, userId: string) => {
+export const findConnection = async (internalPath: Path, userId: string) => {
   const connectionResult = {
     connection_type: 'local',
     connection_id: '',
