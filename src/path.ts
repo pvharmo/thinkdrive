@@ -5,7 +5,7 @@ export class Path {
   #empty: boolean
 
   constructor(path: string) {
-    this.#empty = path.length === 0
+    this.#empty = !path || path.length === 0
     this.#path = path
     if (!this.#empty) {
       this.#isFolder = path[path.length - 1] === '/'
