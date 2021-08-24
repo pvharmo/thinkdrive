@@ -34,7 +34,7 @@ export const createConnection = (_id: string, userId: string) => {
     async move(oldPath, newPath) {
       const conditions = new CopyConditions()
       if (oldPath[oldPath.length - 1] === '/') {
-        const childrenStream = minio.listObjectsV2(userId, oldPath)
+        const childrenStream = minio.listObjectsV2(userId, oldPath, true)
         for await (const child of childrenStream) {
           if (child.name) {
             const newName = child.name.replace(oldPath, newPath)
@@ -116,7 +116,7 @@ export const createConnection = (_id: string, userId: string) => {
       }
     },
     async trash(path: string): Promise<void> {
-      this.move(path, `${userId}/.trash${path}`)
+      this.move(path, `.trash/${path}`)
     },
   }
 
