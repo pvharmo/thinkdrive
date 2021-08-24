@@ -51,7 +51,7 @@ export const getTrashableConnection = async (path: string, userId: string) => {
   const internalPath = new Path(pathSplit[0])
   const distPath = new Path(pathSplit[1])
 
-  if (!distPath.isEmpty) {
+  if (distPath.isEmpty) {
     const connection = await newLocalStorageConnection(userId, userId)
     return {
       connection,
@@ -74,7 +74,7 @@ export const getStandardConnection = async (path: string, userId: string) => {
   const internalPath = new Path(pathSplit[0])
   const distPath = new Path(pathSplit[1])
 
-  if (!distPath.isEmpty) {
+  if (distPath.isEmpty) {
     const connection = await newLocalStorageConnection(userId, userId)
     return {
       connection,
