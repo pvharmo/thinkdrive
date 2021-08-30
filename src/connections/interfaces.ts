@@ -35,6 +35,7 @@ export interface StandardConnection {
   readonly saveContainer: (path: Path) => Promise<void>
   readonly destroyContainer: (path: Path) => Promise<void>
   readonly getMetadata: (path: Path) => Promise<Metadata>
+  readonly newUser: () => Promise<void>
 }
 
 export interface TrashableConnection {

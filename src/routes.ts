@@ -3,8 +3,11 @@ import { Router } from 'express'
 import * as container from './applications/container/container.controller'
 import * as obj from './applications/object/object.controller'
 import * as share from './applications/share/share.controller'
+import * as auth from './applications/auth/auth.controller'
 
 const router: Router = Router()
+
+router.post('/internal/new-user', auth.newUser)
 
 router.get('/container/:userId/*', container.get)
 router.post('/container/:userId/*', container.save)

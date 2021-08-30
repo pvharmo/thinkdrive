@@ -115,6 +115,10 @@ export const createConnection = (_id: string, userId: string) => {
       restore[newPath.path] = path
       minio.putObject(userId, '.trash/.restore.json', JSON.stringify(restore))
     },
+    async newUser(): Promise<void> {
+      await minio.makeBucket(userId, '')
+      await minio.putObject(userId, '.trash/.restore.json', JSON.stringify({}))
+    },
   }
 
   return connection
