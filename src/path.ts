@@ -31,4 +31,8 @@ export class Path {
   get isFolder() {
     return this.#isFolder
   }
+
+  get parent() {
+    return this.#splitPath.slice(0, -1).join('/') + (this.#isFolder ? '/' : '')
+  }
 }
