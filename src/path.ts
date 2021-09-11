@@ -33,6 +33,8 @@ export class Path {
   }
 
   get parent() {
-    return this.#splitPath.slice(0, -1).join('/') + (this.#isFolder ? '/' : '')
+    return new Path(
+      this.#splitPath.slice(0, -1).join('/') + (this.#isFolder ? '/' : '')
+    )
   }
 }
