@@ -1,6 +1,7 @@
 import { Client, CopyConditions } from 'minio'
 
 import { Path } from '../path'
+import * as authorization from '../applications/auth/authorization.repository'
 
 import {
   Child,
@@ -21,17 +22,46 @@ const minio = new Client({
 export const createConnection = (_id: string, userId: string) => {
   const connection: StandardConnection & TrashableConnection = {
     async get(path): Promise<Obj> {
+      await authorization.check({
+        namespace: 'files',
+        object: userId + '/' + path.path,
+        subject: userId,
+        relation: 'get',
+      })
       const presignedUrl = await minio.presignedGetObject(userId, path.path)
       return { presignedUrl }
     },
     async destroy(path): Promise<void> {
+      await authorization.check({
+        namespace: 'files',
+        object: userId + '/' + path.path,
+        subject: userId,
+        relation: 'delete',
+      })
       await minio.removeObject(userId, path.path)
+      await authorization.deleteAllSubjectFromRelation({
+        namespace: 'files',
+        object: userId + '/' + path.path,
+        relation: 'delete',
+      })
     },
     async upsert(path): Promise<Obj> {
+      await authorization.check({
+        namespace: 'files',
+        object: userId + '/' + path.path,
+        subject: userId,
+        relation: 'update',
+      })
       const presignedUrl = await minio.presignedPutObject(userId, path.path, 30)
       return { presignedUrl }
     },
     async move(oldPath, newPath) {
+      await authorization.check({
+        namespace: 'files',
+        object: userId + '/' + oldPath.path,
+        subject: userId,
+        relation: 'update',
+      })
       const conditions = new CopyConditions()
       if (oldPath.isFolder) {
         const childrenStream = minio.listObjectsV2(userId, oldPath.path, true)
@@ -58,6 +88,12 @@ export const createConnection = (_id: string, userId: string) => {
       }
     },
     async getContainerContent(path): Promise<Child[]> {
+      await authorization.check({
+        namespace: 'files',
+        object: userId + '/' + path.path,
+        subject: userId,
+        relation: 'get',
+      })
       const childrenStream = minio.listObjectsV2(userId, path.path)
       const children = []
       for await (const child of childrenStream) {
@@ -80,9 +116,21 @@ export const createConnection = (_id: string, userId: string) => {
       return children
     },
     async saveContainer(path): Promise<void> {
+      await authorization.check({
+        namespace: 'files',
+        object: userId + '/' + path.parent,
+        subject: userId,
+        relation: 'create',
+      })
       await minio.putObject(userId, path.path + '/.thinkdrive.container', '')
     },
     async destroyContainer(path): Promise<void> {
+      await authorization.check({
+        namespace: 'files',
+        object: userId + '/' + path.path,
+        subject: userId,
+        relation: 'delete',
+      })
       const childrenStream = minio.listObjectsV2(userId, path.path, true)
       const children = []
       for await (const child of childrenStream) {
