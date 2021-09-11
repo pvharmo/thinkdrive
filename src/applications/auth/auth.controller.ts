@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 
-import { createConnection } from '../../connections/localStorage'
+import { createConnection } from '../../connections/localStorage/localStorage.service'
 
 import * as authorization from './authorization.repository'
 
