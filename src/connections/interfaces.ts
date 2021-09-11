@@ -1,6 +1,6 @@
 import { Path } from '../path'
 
-import { newConnection as newLocalStorageConnection } from './localStorage'
+import { newConnection as newLocalStorageConnection } from './localStorage/localStorage.service'
 import { newConnection as newS3Connection } from './s3'
 
 export interface PresignedUrl extends String {}

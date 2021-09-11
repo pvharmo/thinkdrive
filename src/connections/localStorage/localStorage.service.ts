@@ -1,15 +1,14 @@
 import { Client, CopyConditions } from 'minio'
 
-import { Path } from '../path'
-import * as authorization from '../applications/auth/authorization.repository'
-
+import * as authorization from '../../applications/auth/authorization.repository'
+import { Path } from '../../path'
 import {
   Child,
   Metadata,
   Obj,
   StandardConnection,
   TrashableConnection,
-} from './interfaces'
+} from '../interfaces'
 
 const minio = new Client({
   endPoint: 'localhost',
@@ -39,11 +38,7 @@ export const createConnection = (_id: string, userId: string) => {
         relation: 'delete',
       })
       await minio.removeObject(userId, path.path)
-      await authorization.deleteAllSubjectFromRelation({
-        namespace: 'files',
-        object: userId + '/' + path.path,
-        relation: 'delete',
-      })
+      await authorization.deletePermissionsForObject(userId + '/' + path.path)
     },
     async upsert(path): Promise<Obj> {
       await authorization.check({
