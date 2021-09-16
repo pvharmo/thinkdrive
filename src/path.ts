@@ -1,6 +1,6 @@
 export class Path {
   #path = ''
-  #splitPath: string[] = []
+  #arrayPath: string[] = []
   #isFolder = false
   #empty: boolean
 
@@ -9,9 +9,9 @@ export class Path {
     this.#path = path
     if (!this.#empty) {
       this.#isFolder = path[path.length - 1] === '/'
-      this.#splitPath = path.split('/')
+      this.#arrayPath = path.split('/')
       if (this.#isFolder) {
-        this.#splitPath.pop()
+        this.#arrayPath.pop()
       }
     }
   }
@@ -25,16 +25,25 @@ export class Path {
   }
 
   get name() {
-    return this.#splitPath[this.#splitPath.length - 1]
+    return this.#arrayPath[this.#arrayPath.length - 1]
   }
 
   get isFolder() {
     return this.#isFolder
   }
 
+  get asArray() {
+    return this.#arrayPath
+  }
+
   get parent() {
     return new Path(
-      this.#splitPath.slice(0, -1).join('/') + (this.#isFolder ? '/' : '')
+      this.#arrayPath.slice(0, -1).join('/') + (this.#isFolder ? '/' : '')
     )
+  }
+
+  extractRoot(): [root: string, rest: Path] {
+    const [root, ...rest] = this.#arrayPath
+    return [root, new Path(rest.join('/'))]
   }
 }

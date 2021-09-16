@@ -29,15 +29,19 @@ interface PermissionTupleWithoutSubject {
   relation: string
 }
 
+interface ObjectPermissions {
+  permissions: PermissionTuple[]
+}
+
 const permissionsPath = (path: string) => {
   const [bucket, ...bucketPath] = path.split('/')
   return {
     bucket,
-    bucketPath: bucketPath.join('/') + '.__permissions',
+    bucketPath: '/' + bucketPath.join('/') + '.__permissions',
   }
 }
 
-const getPermissions = async (path: string): Promise<PermissionTuple[]> => {
+const getPermissions = async (path: string): Promise<ObjectPermissions> => {
   const { bucket, bucketPath } = permissionsPath(path)
   const fileStream = await client.getObject(bucket, bucketPath)
   let fileContent = ''
@@ -49,7 +53,7 @@ const getPermissions = async (path: string): Promise<PermissionTuple[]> => {
 
 const savePermissions = async (
   path: string,
-  permissions: PermissionTuple[]
+  permissions: ObjectPermissions
 ) => {
   const { bucket, bucketPath } = permissionsPath(path)
   client.putObject(bucket, bucketPath, JSON.stringify(permissions))
@@ -62,7 +66,7 @@ export const deletePermissionsForObject = async (path: string) => {
 
 export const createRelationTuple = async (tuple: PermissionTuple) => {
   const permissions = await getPermissions(tuple.object)
-  permissions.push(tuple)
+  permissions.permissions.push(tuple)
   savePermissions(tuple.object, permissions)
 }
 
@@ -78,7 +82,7 @@ export const createRelationsForTuple = async (
       subject: partialTuple.subject,
       relation: relation,
     }
-    permissions.push(tuple)
+    permissions.permissions.push(tuple)
   }
 
   savePermissions(partialTuple.object, permissions)
@@ -86,18 +90,20 @@ export const createRelationsForTuple = async (
 
 export const deleteRelationTuple = async (tuple: PermissionTuple) => {
   const permissions = await getPermissions(tuple.object)
-  const newPermissions = permissions.filter((x) => x != tuple)
-  savePermissions(tuple.object, newPermissions)
+  const newPermissions = permissions.permissions.filter((x) => x != tuple)
+  permissions.permissions = newPermissions
+  savePermissions(tuple.object, permissions)
 }
 
 export const deleteAllSubjectFromRelation = async (
   tuple: PermissionTupleWithoutSubject
 ) => {
   const permissions = await getPermissions(tuple.object)
-  const newPermissions = permissions.filter((x) => {
+  const newPermissions = permissions.permissions.filter((x) => {
     return x.namespace !== tuple.namespace && x.relation !== tuple.relation
   })
-  savePermissions(tuple.object, newPermissions)
+  permissions.permissions = newPermissions
+  savePermissions(tuple.object, permissions)
 }
 
 export const deleteRelationsForTuple = async (
@@ -107,13 +113,14 @@ export const deleteRelationsForTuple = async (
   const newPermissions = []
   const permissions = await getPermissions(partialTuple.object)
   for (const relation in relations) {
-    for (const permission of permissions) {
+    for (const permission of permissions.permissions) {
       if (permission.relation !== relation) {
         newPermissions.push(permission)
       }
     }
   }
-  savePermissions(partialTuple.object, newPermissions)
+  permissions.permissions = newPermissions
+  savePermissions(partialTuple.object, permissions)
 }
 
 export const updateRelationTuple = async (
@@ -138,10 +145,30 @@ export const check = async (tuple: PermissionTuple) => {
   if (bucket === tuple.subject) {
     return
   }
-  const permissions = await getPermissions(tuple.object)
-  for (const permission of permissions) {
-    if (permission === tuple) {
+  const permissions = await findPermissions(tuple.object)
+  for (const permission of permissions.permissions) {
+    if (
+      permission.namespace === tuple.namespace &&
+      // permission.object === tuple.object &&
+      permission.relation === tuple.relation &&
+      permission.subject === tuple.subject
+    ) {
       return
+    }
+  }
+  throw new UnauthorizedException()
+}
+
+const findPermissions = async (path: string) => {
+  let pathArray = path.split('/')
+
+  while (pathArray.length > 0) {
+    try {
+      const permissions = await getPermissions(pathArray.join('/'))
+      return permissions
+    } catch (error) {
+      console.log(error)
+      pathArray = pathArray.slice(0, -1)
     }
   }
   throw new UnauthorizedException()

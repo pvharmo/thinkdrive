@@ -1,9 +1,9 @@
 import { Client, CopyConditions } from 'minio'
 
 import { Path } from '../../path'
-import { Metadata, Obj } from '../interfaces'
+import { Metadata, Obj, Child } from '../interfaces'
 
-const minio = new Client({
+export const minio = new Client({
   endPoint: 'localhost',
   port: 9000,
   useSSL: false,
@@ -61,10 +61,69 @@ export async function getMetadata(
   bucket: string,
   path: Path
 ): Promise<Metadata> {
-  const metadata = await minio.statObject(bucket, path.path)
-  return {
-    size: metadata.size,
-    etag: metadata.etag,
-    lastModified: metadata.lastModified,
+  return await minio.statObject(bucket, path.path)
+}
+
+export async function getContainerContent(
+  bucket: string,
+  path: Path
+): Promise<Child[]> {
+  const childrenStream = minio.listObjectsV2(bucket, path.path)
+  const children = []
+  for await (const child of childrenStream) {
+    const splitIndex =
+      (child.name?.lastIndexOf('/') ||
+        child.prefix?.slice(0, -1)?.lastIndexOf('/')) + 1
+    children.push({
+      type: child.prefix ? 'container' : 'object',
+      name:
+        child.name?.substring(splitIndex) ||
+        child.prefix?.slice(splitIndex, -1),
+      location:
+        '/' +
+        (child.name?.substring(0, splitIndex) ||
+          child.prefix?.substring(0, splitIndex) ||
+          ''),
+      lastModified: child.lastModified,
+    })
   }
+  return children
+}
+
+export async function saveContainer(bucket: string, path: Path): Promise<void> {
+  await minio.putObject(bucket, path.path + '/.thinkdrive.container', '')
+}
+
+export async function destroyContainer(
+  bucket: string,
+  path: Path
+): Promise<void> {
+  const childrenStream = minio.listObjectsV2(bucket, path.path, true)
+  const children = []
+  for await (const child of childrenStream) {
+    children.push(child)
+  }
+  await minio.removeObjects(
+    bucket,
+    children.map((x) => {
+      return x.name
+    })
+  )
+}
+
+export async function getObjectContent(bucket: string, path: Path) {
+  const fileStream = await minio.getObject(bucket, path.path)
+  let fileContent = ''
+  for await (const value of fileStream) {
+    fileContent += value
+  }
+  return fileContent
+}
+
+export async function saveObjectContent(
+  bucket: string,
+  path: Path,
+  content: string
+) {
+  minio.putObject(bucket, path.path, content)
 }

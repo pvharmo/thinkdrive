@@ -9,21 +9,21 @@ const router: Router = Router()
 
 router.post('/internal/new-user', auth.newUser)
 
-router.get('/container/:userId/*', container.get)
-router.post('/container/:userId/*', container.save)
-router.delete('/container/:userId/*', container.destroy)
-router.put('/container/move/:userId/*', container.move)
-router.put('/container/trash/:userId/*', container.trash)
+router.get('/container/*', container.get)
+router.post('/container/*', container.save)
+router.delete('/container/*', container.destroy)
+router.put('/container/move/*', container.move)
+router.put('/container/trash/*', container.trash)
 
-router.get('/object/:userId/*', obj.get)
-router.post('/object/:userId/*', obj.upsert)
-router.delete('/object/:userId/*', obj.destroy)
-router.put('/object/move/:userId/*', obj.move)
-router.put('/object/trash/:userId/*', obj.trash)
+router.get('/object/*', obj.get)
+router.post('/object/*', obj.upsert)
+router.delete('/object/*', obj.destroy)
+router.put('/object/move/*', obj.move)
+router.put('/object/trash/*', obj.trash)
 
-router.get('/metadata/:userId/*', obj.getMetadata)
+router.get('/metadata/*', obj.getMetadata)
 
-router.get('/share/:userId/*', share.getStatus)
-router.put('/share/:userId/*', share.setStatus)
+router.get('/share/*', share.getStatus)
+router.put('/share/*', share.setStatus)
 
 export default router

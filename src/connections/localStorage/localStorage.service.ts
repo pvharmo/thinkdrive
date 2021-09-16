@@ -1,5 +1,3 @@
-import { Client, CopyConditions } from 'minio'
-
 import * as authorization from '../../applications/auth/authorization.repository'
 import { Path } from '../../path'
 import {
@@ -10,136 +8,95 @@ import {
   TrashableConnection,
 } from '../interfaces'
 
-const minio = new Client({
-  endPoint: 'localhost',
-  port: 9000,
-  useSSL: false,
-  accessKey: 'admin',
-  secretKey: 'password',
-})
+import * as repository from './localstorage.repository'
 
 export const createConnection = (_id: string, userId: string) => {
   const connection: StandardConnection & TrashableConnection = {
     async get(path): Promise<Obj> {
       await authorization.check({
         namespace: 'files',
-        object: userId + '/' + path.path,
+        object: path.path,
         subject: userId,
         relation: 'get',
       })
-      const presignedUrl = await minio.presignedGetObject(userId, path.path)
-      return { presignedUrl }
+      const [bucket, bucketPath] = path.extractRoot()
+      return repository.get(bucket, bucketPath)
     },
     async destroy(path): Promise<void> {
       await authorization.check({
         namespace: 'files',
-        object: userId + '/' + path.path,
+        object: path.path,
         subject: userId,
         relation: 'delete',
       })
-      await minio.removeObject(userId, path.path)
-      await authorization.deletePermissionsForObject(userId + '/' + path.path)
+      const [bucket, bucketPath] = path.extractRoot()
+      await repository.destroy(bucket, bucketPath)
+      await authorization.deletePermissionsForObject(path.path)
     },
     async upsert(path): Promise<Obj> {
       await authorization.check({
         namespace: 'files',
-        object: userId + '/' + path.path,
+        object: path.path,
         subject: userId,
         relation: 'update',
       })
-      const presignedUrl = await minio.presignedPutObject(userId, path.path, 30)
-      return { presignedUrl }
+      const [bucket, bucketPath] = path.extractRoot()
+      return repository.upsert(bucket, bucketPath)
     },
     async move(oldPath, newPath) {
       await authorization.check({
         namespace: 'files',
-        object: userId + '/' + oldPath.path,
+        object: oldPath.path,
         subject: userId,
         relation: 'update',
       })
-      const conditions = new CopyConditions()
+      const [oldBucket, oldBucketPath] = oldPath.extractRoot()
+      const [newBucket, newBucketPath] = newPath.extractRoot()
       if (oldPath.isFolder) {
-        const childrenStream = minio.listObjectsV2(userId, oldPath.path, true)
-        for await (const child of childrenStream) {
-          if (child.name) {
-            const newName = child.name.replace(oldPath.path, newPath.path)
-            await minio.copyObject(
-              userId,
-              newName,
-              `/${userId}/${child.name}`,
-              conditions
-            )
-            await minio.removeObject(userId, child.name)
-          }
-        }
+        repository.moveContainer(oldBucket, oldBucketPath, newBucketPath)
       } else {
-        await minio.copyObject(
-          userId,
-          newPath.path,
-          `/${userId}/${oldPath.path}`,
-          conditions
-        )
-        await minio.removeObject(userId, oldPath.path)
+        repository.moveObject(newBucket, oldBucketPath, newBucketPath)
       }
     },
     async getContainerContent(path): Promise<Child[]> {
       await authorization.check({
         namespace: 'files',
-        object: userId + '/' + path.path,
+        object: path.path,
         subject: userId,
         relation: 'get',
       })
-      const childrenStream = minio.listObjectsV2(userId, path.path)
-      const children = []
-      for await (const child of childrenStream) {
-        const splitIndex =
-          (child.name?.lastIndexOf('/') ||
-            child.prefix?.slice(0, -1)?.lastIndexOf('/')) + 1
-        children.push({
-          type: child.prefix ? 'container' : 'object',
-          name:
-            child.name?.substring(splitIndex) ||
-            child.prefix?.slice(splitIndex, -1),
-          location:
-            '/' +
-            (child.name?.substring(0, splitIndex) ||
-              child.prefix?.substring(0, splitIndex) ||
-              ''),
-          lastModified: child.lastModified,
-        })
-      }
-      return children
+      const [bucket, bucketPath] = path.extractRoot()
+      return repository.getContainerContent(bucket, bucketPath)
     },
     async saveContainer(path): Promise<void> {
       await authorization.check({
         namespace: 'files',
-        object: userId + '/' + path.parent,
+        object: path.path,
         subject: userId,
         relation: 'create',
       })
-      await minio.putObject(userId, path.path + '/.thinkdrive.container', '')
+      const [bucket, bucketPath] = path.extractRoot()
+      await repository.saveContainer(bucket, bucketPath)
     },
     async destroyContainer(path): Promise<void> {
       await authorization.check({
         namespace: 'files',
-        object: userId + '/' + path.path,
+        object: path.path,
         subject: userId,
         relation: 'delete',
       })
-      const childrenStream = minio.listObjectsV2(userId, path.path, true)
-      const children = []
-      for await (const child of childrenStream) {
-        children.push(child)
-      }
-      await minio.removeObjects(
-        userId,
-        children.map((x) => {
-          return x.name
-        })
-      )
+      const [bucket, bucketPath] = path.extractRoot()
+      repository.destroyContainer(bucket, bucketPath)
     },
     async getMetadata(path): Promise<Metadata> {
-      const metadata = await minio.statObject(userId, path.path)
+      await authorization.check({
+        namespace: 'files',
+        object: path.path,
+        subject: userId,
+        relation: 'delete',
+      })
+      const [bucket, bucketPath] = path.extractRoot()
+      const metadata = await repository.getMetadata(bucket, bucketPath)
       return {
         size: metadata.size,
         etag: metadata.etag,
@@ -147,20 +104,27 @@ export const createConnection = (_id: string, userId: string) => {
       }
     },
     async trash(path): Promise<void> {
-      const fileStream = await minio.getObject(userId, '.trash/.restore.json')
-      let fileContent = ''
-      for await (const value of fileStream) {
-        fileContent += value
-      }
+      await authorization.check({
+        namespace: 'files',
+        object: path.path,
+        subject: userId,
+        relation: 'delete',
+      })
+      const restorePath = new Path('.trash/.restore.json')
+      const fileContent = await repository.getObjectContent(userId, restorePath)
       const restore = JSON.parse(fileContent)
       const newPath = new Path(`.trash/` + path.name + '/')
       await this.move(path, newPath)
       restore[newPath.path] = path
-      minio.putObject(userId, '.trash/.restore.json', JSON.stringify(restore))
+      repository.saveObjectContent(userId, restorePath, JSON.stringify(restore))
     },
     async newUser(): Promise<void> {
-      await minio.makeBucket(userId, '')
-      await minio.putObject(userId, '.trash/.restore.json', JSON.stringify({}))
+      await repository.minio.makeBucket(userId, '')
+      await repository.minio.putObject(
+        userId,
+        '.trash/.restore.json',
+        JSON.stringify({})
+      )
     },
   }
 

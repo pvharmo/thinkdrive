@@ -1,7 +1,9 @@
-import express from 'express'
+import express, { ErrorRequestHandler } from 'express'
 import cors from 'cors'
 
+import UnauthorizedException from './applications/auth/UnauthorizedException'
 import routes from './routes'
+import { NotFound } from './connections/interfaces'
 
 const app = express()
 
@@ -9,6 +11,18 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(routes)
+
+const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
+  if (error instanceof UnauthorizedException) {
+    res.status(403).json()
+  } else if (error instanceof NotFound) {
+    res.status(404).json()
+  } else {
+    next()
+  }
+}
+
+app.use(errorHandler)
 
 const port = 3000
 
