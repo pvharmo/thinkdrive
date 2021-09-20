@@ -68,7 +68,7 @@ export async function getContainerContent(
   bucket: string,
   path: Path
 ): Promise<Child[]> {
-  const childrenStream = minio.listObjectsV2(bucket, path.path)
+  const childrenStream = minio.listObjectsV2(bucket, path.path + '/')
   const children = []
   for await (const child of childrenStream) {
     const splitIndex =
@@ -87,6 +87,7 @@ export async function getContainerContent(
       lastModified: child.lastModified,
     })
   }
+  console.log(path.path, children)
   return children
 }
 
