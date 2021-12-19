@@ -1,7 +1,10 @@
 import { Path } from '../path'
 
+import { newConnection as newDispatcher } from './dispatcher/dispatcher'
 import { newConnection as newLocalStorageConnection } from './localStorage/localStorage.service'
 import { newConnection as newS3Connection } from './s3'
+import { newConnection as newGoogleDriveConnection } from './GoogleDrive/googledrive'
+import { newConnection as newMysqlConnection } from './SQL/mysql'
 
 export interface PresignedUrl extends String {}
 
@@ -20,7 +23,9 @@ export interface ObjectNotFound {
 }
 
 export interface Child {
-  name: string
+  name: string,
+  type: string,
+  contentUrl: string
 }
 
 export class NotFound extends Error {}
@@ -73,10 +78,13 @@ export const getTrashableConnection = async (path: string, userId: string) => {
 export const getStandardConnection = async (path: string, userId: string) => {
   const pathSplit = path.split('//')
   const internalPath = new Path(pathSplit[0])
-  const distPath = new Path(pathSplit[1])
+  let distPath = new Path(pathSplit[1])
+  if (pathSplit.length == 2 && !pathSplit[1]) {
+    distPath = new Path('/')
+  }
 
   if (distPath.isEmpty) {
-    const connection = await newLocalStorageConnection(userId, userId)
+    const connection = await newDispatcher(userId, userId)
     return {
       connection,
       path: internalPath,
@@ -95,7 +103,7 @@ export const getStandardConnection = async (path: string, userId: string) => {
 
 export const findConnection = async (internalPath: Path, userId: string) => {
   const connectionResult = {
-    connection_type: 'local',
+    connection_type: internalPath.name,
     connection_id: '',
   }
 
@@ -118,6 +126,12 @@ export const toConnection = (
   switch (connectionType) {
     case 's3':
       return newS3Connection(connectionId, userId)
+
+    case 'GoogleDrive':
+      return newGoogleDriveConnection(connectionId, userId)
+
+    case 'MySQL':
+      return newMysqlConnection(connectionId, userId)
 
     default:
       return newLocalStorageConnection(connectionId, userId)
