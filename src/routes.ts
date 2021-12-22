@@ -1,11 +1,22 @@
-import { Router } from 'express'
+import { Router, Request, Response } from 'express'
 import {google} from 'googleapis'
 
-import * as container from './api/container/container.controller'
-import * as obj from './api/object/object.controller'
+import * as container from './api/filesystem/folder.controller'
+import * as obj from './api/filesystem/file.controller'
 import * as auth from './api/auth/auth.controller'
 
 const router: Router = Router()
+
+interface Interfaces {
+  filesystem: any
+}
+
+const requestInterfaces: Interfaces = {
+  filesystem : {
+    ...container,
+    ...obj
+  }
+}
 
 router.post('/log', (req, res) => {
   console.log(req)
@@ -39,7 +50,7 @@ router.get('/oauth', (req, res) => {
   console.log("code: ", req.query.code)
   
   try {
-    oAuth2Client.getToken(req.query.code, (err, token) => {
+    oAuth2Client.getToken(req.query.code as string, (err, token) => {
       if (err) return console.error('Error retrieving access token', err);
       // Store the token to disk for later program executions
       console.log(token);
@@ -50,23 +61,16 @@ router.get('/oauth', (req, res) => {
   }
 })
 
-router.post('/internal/new-user', auth.newUser)
+router.put('/internal/new-user', auth.newUser)
 
-router.get('/container/*', container.get)
-router.post('/container/*', container.save)
-router.delete('/container/*', container.destroy)
-router.put('/container/move/*', container.move)
-router.put('/container/trash/*', container.trash)
+router.post('/*', (req: Request, res: Response) => {
+  const requestInterface: string = req.headers.interface as string
+  const requestAction: string = req.headers.action as string
 
-router.get('/object/*', obj.get)
-router.post('/object/*', obj.upsert)
-router.delete('/object/*', obj.destroy)
-router.put('/object/move/*', obj.move)
-router.put('/object/trash/*', obj.trash)
+  const response = requestInterfaces[requestInterface as keyof Interfaces][requestAction](req.body)
 
-router.get('/metadata/*', obj.getMetadata)
+  res.status(response.status).json(response.body)
+})
 
-router.get('/share/*', share.getStatus)
-router.put('/share/*', share.setStatus)
 
 export default router
