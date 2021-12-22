@@ -2,7 +2,7 @@ import express, { ErrorRequestHandler } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 
-import UnauthorizedException from './applications/auth/UnauthorizedException'
+import UnauthorizedException from './api/auth/UnauthorizedException'
 import routes from './routes'
 import { NotFound } from './connections/interfaces'
 

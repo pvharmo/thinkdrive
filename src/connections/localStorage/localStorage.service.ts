@@ -1,4 +1,4 @@
-import * as authorization from '../../applications/auth/authorization.repository'
+import * as authorization from '../../api/auth/authorization.repository'
 import { Path } from '../../path'
 import {
   Child,
