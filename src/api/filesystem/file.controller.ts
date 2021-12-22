@@ -1,130 +1,114 @@
-import { NextFunction, Request, Response } from 'express'
+import { Path } from '../../path'
 
 import {
   Obj,
-  getStandardConnection,
-  getTrashableConnection,
-} from '../../connections/interfaces'
-import { Path } from '../../path'
+  getFileSystemConnection,
+} from './filesystem.api'
 
-export const get = async (req: Request, res: Response, next: NextFunction) => {
-  const completePath = req.params[0]
+
+export const get = async (user: string, body: any, source: string) => {
+  const completePath = body.path
   try {
-    const { connection, path } = await getStandardConnection(
+    const { connection, path } = await getFileSystemConnection(
+      source,
       completePath,
-      req.headers['x-user'] as string
+      user
     )
     const obj = await connection.get(path)
-    res.status(200).json({ presignedUrl: obj.presignedUrl })
+    return {
+      status : 200,
+      body: {
+        presignedUrl: obj.presignedUrl
+      }
+    }
   } catch (e) {
-    next(e)
+    return {
+      status : 500
+    }
   }
 }
 
-export const upsert = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const completePath = req.params[0]
+export const upload = async (user: string, body: any, source: string) => {
+  const completePath = body.path
   try {
-    const { connection, path } = await getStandardConnection(
-      completePath,
-      req.headers['x-user'] as string
-    )
-    const obj = await connection.upsert(path)
-    res.status(201).json({
-      message: 'Object successfully created',
-      presignedUrl: obj.presignedUrl,
-    })
+    const { connection, path } = await getFileSystemConnection(source, completePath, user)
+    const obj = await connection.upload(path)
+    return {
+      status: 201,
+      body: {
+        presignedUrl: obj.presignedUrl
+      }
+    }
   } catch (e) {
-    next(e)
+    return {
+      status : 500
+    }
   }
 }
 
-export const save = async (req: Request, res: Response, next: NextFunction) => {
-  const completePath = req.params[0]
+export const save = async (user: string, body: any, source: string) => {
+  const completePath = body.path
   try {
-    const { connection, path } = await getStandardConnection(
-      completePath,
-      req.headers['x-user'] as string
-    )
-    const obj: Obj = await connection.upsert(path)
-    res.status(200).json({
-      message: 'Object successfully saved',
-      presignedUrl: obj.presignedUrl,
-    })
+    const { connection, path } = await getFileSystemConnection(source, completePath, user)
+    const obj: Obj = await connection.upload(path)
+    return {
+      status: 200,
+      body: {
+        presignedUrl: obj.presignedUrl
+      }
+    }
   } catch (e) {
-    next(e)
+    return {
+      status: 500
+    }
   }
 }
 
-export const destroy = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const completePath = req.params[0]
+export const destroy = async (user: string, body: any, source: string) => {
+  const completePath = body.path
   try {
-    const { connection, path } = await getStandardConnection(
-      completePath,
-      req.headers['x-user'] as string
-    )
+    const { connection, path } = await getFileSystemConnection(source, completePath, user)
     await connection.destroy(path)
-    res.status(200).json({ message: 'Object successfully deleted' })
+    return {
+      status: 200
+    }
   } catch (e) {
-    next(e)
+    return {
+      status: 500
+    }
   }
 }
 
-export const getMetadata = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const completePath = req.params[0]
+export const getMetadata = async (user: string, body: any, source: string) => {
+  const completePath = body.path
   try {
-    const { connection, path } = await getStandardConnection(
-      completePath,
-      req.headers['x-user'] as string
-    )
+    const { connection, path } = await getFileSystemConnection(source, completePath, user)
     const obj = await connection.getMetadata(path)
-    res.status(200).json(obj)
+    return {
+      status: 200,
+      body: {
+        obj
+      }
+    }
   } catch (e) {
-    next(e)
+    return {
+      status: 500
+    }
   }
 }
 
-export const move = async (req: Request, res: Response, next: NextFunction) => {
-  const completePath = req.params[0]
+export const move = async (user: string, body: any, source: string) => {
+  const completePath = body.path
 
   try {
-    const { connection, path } = await getStandardConnection(
-      completePath,
-      req.headers['x-user'] as string
-    )
-    await connection.move(path, new Path(req.body.newPath))
-    res.status(200).json({ message: 'Container successfully deleted' })
+    const { connection, path } = await getFileSystemConnection(source, completePath, user)
+    await connection.move(path, new Path(body.newPath))
+    return {
+      status: 200
+    }
   } catch (e) {
-    next(e)
-  }
-}
-
-export const trash = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const completePath = req.params[0]
-
-  try {
-    const { connection, path } = await getTrashableConnection(
-      completePath,
-      req.headers['x-user'] as string
-    )
-    await connection.trash(path)
-    res.status(200).json({ message: 'Container successfully deleted' })
-  } catch (e) {
-    next(e)
+    return {
+      status: 500
+    }
   }
 }

@@ -1,93 +1,70 @@
-import { NextFunction, Request, Response } from 'express'
-
-import {
-  getStandardConnection,
-  getTrashableConnection,
-} from '../../connections/interfaces'
 import { Path } from '../../path'
 
-export const get = async (req: Request, res: Response, next: NextFunction) => {
-  const completePath = req.params[0]
+import {
+  getFileSystemConnection,
+} from './filesystem.api'
 
-  const { connection, path } = await getStandardConnection(
-    completePath,
-    req.headers['x-user'] as string
-  )
-  let object
+export const get = async (user: string, body: any, source: string) => {
+  const completePath = body.path
 
   try {
-    object = await connection.getContainerContent(path)
+    const { connection, path } = await getFileSystemConnection(source, completePath, user)
+    const object = await connection.getContainerContent(path)
+    return {
+      status: 200,
+      body: object
+    }
   } catch (error) {
-    next(error)
+    return {
+      status: 500
+    }
   }
-
-  res.status(200).json(object)
 }
 
-export const save = async (req: Request, res: Response, next: NextFunction) => {
-  const completePath = req.params[0]
+export const save = async (user: string, body: any, source: string) => {
+  const completePath = body.path
 
   try {
-    const { connection, path } = await getStandardConnection(
-      completePath,
-      req.headers['x-user'] as string
-    )
+    const { connection, path } = await getFileSystemConnection(source, completePath, user)
     await connection.saveContainer(path)
-    res.status(201).json({ message: 'Container successfully created' })
+    return {
+      status: 201
+    }
   } catch (e) {
-    next(e)
+    return {
+      status: 500
+    }
   }
 }
 
-export const destroy = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const completePath = req.params[0]
+export const destroy = async (user: string, body: any, source: string) => {
+  const completePath = body.path
 
   try {
-    const { connection, path } = await getStandardConnection(
-      completePath,
-      req.headers['x-user'] as string
-    )
+    const { connection, path } = await getFileSystemConnection(source, completePath, user)
     await connection.destroyContainer(path)
-    res.status(200).json({ message: 'Container successfully deleted' })
+    return {
+      status: 200
+    }
   } catch (e) {
-    next(e)
+    return {
+      status: 500
+    }
   }
 }
 
-export const move = async (req: Request, res: Response, next: NextFunction) => {
-  const completePath = req.params[0]
+export const move = async (user: string, body: any, source: string) => {
+  const completePath = body.path
 
   try {
-    const { connection, path } = await getStandardConnection(
-      completePath,
-      req.headers['x-user'] as string
-    )
-    await connection.move(path, new Path(req.body.newPath))
-    res.status(200).json({ message: 'Container successfully deleted' })
+    const { connection, path } = await getFileSystemConnection(source, completePath, user)
+    await connection.move(path, new Path(body.newPath))
+    return {
+      status: 200
+    }
   } catch (e) {
-    next(e)
-  }
-}
-
-export const trash = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const completePath = req.params[0]
-
-  try {
-    const { connection, path } = await getTrashableConnection(
-      completePath,
-      req.headers['x-user'] as string
-    )
-    await connection.trash(path)
-    res.status(200).json({ message: 'Container successfully deleted' })
-  } catch (e) {
-    next(e)
+    return {
+      status: 500
+    }
   }
 }

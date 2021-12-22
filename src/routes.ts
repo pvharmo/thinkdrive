@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express'
 import {google} from 'googleapis'
 
-import * as container from './api/filesystem/folder.controller'
-import * as obj from './api/filesystem/file.controller'
+import { api as fileSystemAPI } from './api/filesystem/filesystem.api'
 import * as auth from './api/auth/auth.controller'
 
 const router: Router = Router()
@@ -12,27 +11,8 @@ interface Interfaces {
 }
 
 const requestInterfaces: Interfaces = {
-  filesystem : {
-    ...container,
-    ...obj
-  }
+  filesystem : fileSystemAPI
 }
-
-router.post('/log', (req, res) => {
-  console.log(req)
-  console.log(req.body)
-  res.json({})
-})
-router.get('/log', (req, res) => {
-  console.log(req)
-  console.log(req.body)
-  res.json({})
-})
-router.put('/log', (req, res) => {
-  console.log(req)
-  console.log(req.body)
-  res.json({})
-})
 
 router.get('/oauth', (req, res) => {
   const credentials = {
@@ -40,9 +20,7 @@ router.get('/oauth', (req, res) => {
     client_id: process.env.GOOGLE_CLIENT_ID,
     redirect_uris: [process.env.GOOGLE_REDIRECT_URI, 'http://localhost:3000/log', 'http://localhost:3000/oauth']
   } 
-  
-  const SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly'];
-  
+    
   console.log(credentials.client_id)
   
   const oAuth2Client = new google.auth.OAuth2(credentials.client_id, credentials.client_secret, credentials.redirect_uris[2]);
@@ -66,8 +44,10 @@ router.put('/internal/new-user', auth.newUser)
 router.post('/*', (req: Request, res: Response) => {
   const requestInterface: string = req.headers.interface as string
   const requestAction: string = req.headers.action as string
+  const requestSource: string = req.headers.source as string
+  const user: string = req.headers.user as string;
 
-  const response = requestInterfaces[requestInterface as keyof Interfaces][requestAction](req.body)
+  const response = requestInterfaces[requestInterface as keyof Interfaces][requestAction](user, req.body, requestSource)
 
   res.status(response.status).json(response.body)
 })

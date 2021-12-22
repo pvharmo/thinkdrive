@@ -1,12 +1,12 @@
 import { Request, Response } from 'express'
 
-import { getStandardConnection } from '../../connections/interfaces'
+import { getFileSystemConnection } from '../../connections/interfaces'
 
 export const getStatus = async (req: Request, res: Response) => {
   const completePath = req.params[0]
 
   try {
-    const { connection, path } = await getStandardConnection(
+    const { connection, path } = await getFileSystemConnection(
       completePath,
       req.params.userId
     )
@@ -22,7 +22,7 @@ export const setStatus = async (req: Request, res: Response) => {
   const completePath = req.params[0]
 
   try {
-    const { connection, path } = await getStandardConnection(
+    const { connection, path } = await getFileSystemConnection(
       completePath,
       req.params.userId
     )

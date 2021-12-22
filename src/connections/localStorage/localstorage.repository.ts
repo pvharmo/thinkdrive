@@ -1,7 +1,7 @@
 import { Client, CopyConditions } from 'minio'
 
 import { Path } from '../../path'
-import { Metadata, Obj, Child } from '../interfaces'
+import { Metadata, Obj, Child } from '../../api/filesystem/filesystem.api'
 
 export const minio = new Client({
   endPoint: 'localhost',
@@ -85,9 +85,10 @@ export async function getContainerContent(
           child.prefix?.substring(0, splitIndex) ||
           ''),
       lastModified: child.lastModified,
+      contentUrl: ''
     })
   }
-  console.log(path.path, children)
+
   return children
 }
 

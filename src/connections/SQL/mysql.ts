@@ -2,21 +2,19 @@ import util from 'util'
 
 import mysql from 'mysql'
 
-
-
 import {
   Child,
   Metadata,
   Obj,
-  StandardConnection,
-} from '../interfaces'
+  FileSystemAPI,
+} from '../../api/filesystem/filesystem.api'
 
 
-function makeDb( config ) {
+function makeDb( config: any ) {
   const connection = mysql.createConnection( config );  return {
-    query( sql, args ) {
+    query( sql: string ) {
       return util.promisify( connection.query )
-        .call( connection, sql, args );
+        .call( connection, sql );
     },
     close() {
       return util.promisify( connection.end ).call( connection );
@@ -34,7 +32,7 @@ export const createConnection = (_id: string, userId: string) => {
   })
 
   
-  const connection: StandardConnection = {
+  const connection: FileSystemAPI = {
     async get(path): Promise<Obj> {
       return {
         presignedUrl: ''
@@ -44,7 +42,7 @@ export const createConnection = (_id: string, userId: string) => {
       // const [bucket, bucketPath] = path.extractRoot()
       // await repository.destroy(bucket, bucketPath)
     },
-    async upsert(path): Promise<Obj> {
+    async upload(path): Promise<Obj> {
       return {
         presignedUrl: ''
       }
@@ -60,7 +58,7 @@ export const createConnection = (_id: string, userId: string) => {
     },
     async getContainerContent(path): Promise<Child[]> {
       if (path.path == "/") {
-        const tables = await db.query('SHOW TABLES;', {})
+        const tables: any[] = await db.query('SHOW TABLES;') as any[]
 
         const files = tables?.map((file) => {
           return {name: file.Tables_in_db as string, id: file.Tables_in_db, type: "container", contentUrl: "/MySQL//" + file.Tables_in_db + '/'}
@@ -69,9 +67,7 @@ export const createConnection = (_id: string, userId: string) => {
   
       }
 
-      const rows = await db.query('SELECT * FROM ' + path.name + ';', {})
-
-      // console.log(rows)
+      const rows: any[] = await db.query('SELECT * FROM ' + path.name + ';') as any[]
   
       const files = rows.map((file) => {
         const keys = Object.keys(file)
@@ -100,15 +96,7 @@ export const createConnection = (_id: string, userId: string) => {
         etag: '',
         lastModified: new Date()
       }
-    },
-    async newUser(): Promise<void> {
-      // await repository.minio.makeBucket(userId, '')
-      // await repository.minio.putObject(
-      //   userId,
-      //   '.trash/.restore.json',
-      //   JSON.stringify({})
-      // )
-    },
+    }
   }
 
   return connection
@@ -117,6 +105,6 @@ export const createConnection = (_id: string, userId: string) => {
 export const newConnection = async (
   id: string,
   userId: string
-): Promise<StandardConnection> => {
+): Promise<FileSystemAPI> => {
   return createConnection(id, userId)
 }

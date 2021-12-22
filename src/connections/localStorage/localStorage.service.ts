@@ -1,17 +1,15 @@
 import * as authorization from '../../api/auth/authorization.repository'
-import { Path } from '../../path'
 import {
   Child,
   Metadata,
   Obj,
-  StandardConnection,
-  TrashableConnection,
-} from '../interfaces'
+  FileSystemAPI,
+} from '../../api/filesystem/filesystem.api'
 
 import * as repository from './localstorage.repository'
 
 export const createConnection = (_id: string, userId: string) => {
-  const connection: StandardConnection & TrashableConnection = {
+  const connection: FileSystemAPI = {
     async get(path): Promise<Obj> {
       await authorization.check({
         namespace: 'files',
@@ -33,7 +31,7 @@ export const createConnection = (_id: string, userId: string) => {
       await repository.destroy(bucket, bucketPath)
       await authorization.deletePermissionsForObject(path.path)
     },
-    async upsert(path): Promise<Obj> {
+    async upload(path): Promise<Obj> {
       await authorization.check({
         namespace: 'files',
         object: path.path,
@@ -103,29 +101,14 @@ export const createConnection = (_id: string, userId: string) => {
         lastModified: metadata.lastModified,
       }
     },
-    async trash(path): Promise<void> {
-      await authorization.check({
-        namespace: 'files',
-        object: path.path,
-        subject: userId,
-        relation: 'delete',
-      })
-      const restorePath = new Path('.trash/.restore.json')
-      const fileContent = await repository.getObjectContent(userId, restorePath)
-      const restore = JSON.parse(fileContent)
-      const newPath = new Path(`.trash/` + path.name + '/')
-      await this.move(path, newPath)
-      restore[newPath.path] = path
-      repository.saveObjectContent(userId, restorePath, JSON.stringify(restore))
-    },
-    async newUser(): Promise<void> {
-      await repository.minio.makeBucket(userId, '')
-      await repository.minio.putObject(
-        userId,
-        '.trash/.restore.json',
-        JSON.stringify({})
-      )
-    },
+    // async newUser(): Promise<void> {
+    //   await repository.minio.makeBucket(userId, '')
+    //   await repository.minio.putObject(
+    //     userId,
+    //     '.trash/.restore.json',
+    //     JSON.stringify({})
+    //   )
+    // },
   }
 
   return connection
@@ -134,6 +117,6 @@ export const createConnection = (_id: string, userId: string) => {
 export const newConnection = async (
   id: string,
   userId: string
-): Promise<StandardConnection & TrashableConnection> => {
+): Promise<FileSystemAPI> => {
   return createConnection(id, userId)
 }

@@ -5,8 +5,8 @@ import {
   Child,
   Metadata,
   Obj,
-  StandardConnection,
-} from '../interfaces'
+  FileSystemAPI,
+} from '../../api/filesystem/filesystem.api'
 
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
@@ -39,7 +39,7 @@ export const createConnection = (_id: string, userId: string) => {
   const drive = google.drive({version: 'v3', auth});
 
   
-  const connection: StandardConnection = {
+  const connection: FileSystemAPI = {
     async get(path): Promise<Obj> {
       console.log("test")
       console.log(path.path)
@@ -58,7 +58,7 @@ export const createConnection = (_id: string, userId: string) => {
       // const [bucket, bucketPath] = path.extractRoot()
       // await repository.destroy(bucket, bucketPath)
     },
-    async upsert(path): Promise<Obj> {
+    async upload(path): Promise<Obj> {
       // const [bucket, bucketPath] = path.extractRoot()
       // return repository.upsert(bucket, bucketPath)
       return {
@@ -127,14 +127,6 @@ export const createConnection = (_id: string, userId: string) => {
         lastModified: new Date()
       }
     },
-    async newUser(): Promise<void> {
-      // await repository.minio.makeBucket(userId, '')
-      // await repository.minio.putObject(
-      //   userId,
-      //   '.trash/.restore.json',
-      //   JSON.stringify({})
-      // )
-    },
   }
 
   return connection
@@ -143,6 +135,6 @@ export const createConnection = (_id: string, userId: string) => {
 export const newConnection = async (
   id: string,
   userId: string
-): Promise<StandardConnection> => {
+): Promise<FileSystemAPI> => {
   return createConnection(id, userId)
 }
