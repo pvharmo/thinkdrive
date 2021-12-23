@@ -16,7 +16,7 @@ export const newConnection = async (
   const minio = new Client({
     endPoint: 'localhost',
     port: 9000,
-    useSSL: true,
+    useSSL: false,
     accessKey: 'admin',
     secretKey: 'password',
   })

@@ -41,15 +41,19 @@ router.get('/oauth', (req, res) => {
 
 router.put('/internal/new-user', auth.newUser)
 
-router.post('/*', (req: Request, res: Response) => {
-  const requestInterface: string = req.headers.interface as string
+router.post('/*', async (req: Request, res: Response) => {
+  const requestApi: string = req.headers.api as string
   const requestAction: string = req.headers.action as string
-  const requestSource: string = req.headers.source as string
+  const requestSource: string = req.headers['data-source'] as string
   const user: string = req.headers.user as string;
-
-  const response = requestInterfaces[requestInterface as keyof Interfaces][requestAction](user, req.body, requestSource)
-
-  res.status(response.status).json(response.body)
+  
+  try {
+    const response = await requestInterfaces[requestApi as keyof Interfaces][requestAction](user, req.body, requestSource)
+    res.status(response.status).json(response.body)
+  } catch (e) {
+    console.error(e)
+    res.status(500)
+  }
 })
 
 

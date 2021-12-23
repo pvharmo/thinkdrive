@@ -14,7 +14,8 @@ export const get = async (user: string, body: any, source: string) => {
       status: 200,
       body: object
     }
-  } catch (error) {
+  } catch (e) {
+    console.error(e)
     return {
       status: 500
     }

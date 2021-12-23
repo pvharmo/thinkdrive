@@ -2,11 +2,16 @@ export class Path {
   #path = ''
   #arrayPath: string[] = []
   #isFolder = false
+  #isAbsolutePath = false
   #empty: boolean
 
   constructor(path: string) {
     this.#empty = !path || path.length === 0
     this.#path = path
+    if (path[0] == '/') {
+      this.#isAbsolutePath = true
+      path = path.substr(1)
+    }
     if (!this.#empty) {
       this.#isFolder = path[path.length - 1] === '/'
       this.#arrayPath = path.split('/')
@@ -14,6 +19,10 @@ export class Path {
         this.#arrayPath.pop()
       }
     }
+  }
+
+  get isAbsolute() {
+    return this.#isAbsolutePath
   }
 
   get isEmpty() {

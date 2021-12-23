@@ -2,7 +2,7 @@ import { Path } from '../../path'
 import { findConnection } from '../../connections/interfaces'
 
 import * as file from './file.controller'
-import * as folder from './file.controller'
+import * as folder from './folder.controller'
 
 export interface PresignedUrl extends String {}
 
@@ -33,7 +33,7 @@ export interface FileSystemAPI {
   readonly getMetadata: (path: Path) => Promise<Metadata>
 }
 
-export const getFileSystemConnection = async (path: string, userId: string, source: string) => {
+export const getFileSystemConnection = async (source: string, path: string, userId: string) => {
   const connection: FileSystemAPI = await findConnection(
     source,
     userId
