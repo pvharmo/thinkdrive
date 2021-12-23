@@ -47,18 +47,17 @@ export async function getContainerContent(
     const splitIndex =
       (child.name?.lastIndexOf('/') ||
         child.prefix?.slice(0, -1)?.lastIndexOf('/')) + 1
+    const name = child.name?.substring(splitIndex) || child.prefix?.slice(splitIndex, -1)
     children.push({
       type: child.prefix ? 'container' : 'object',
-      name:
-        child.name?.substring(splitIndex) ||
-        child.prefix?.slice(splitIndex, -1),
+      name,
       location:
         '/' +
         (child.name?.substring(0, splitIndex) ||
           child.prefix?.substring(0, splitIndex) ||
           ''),
       lastModified: child.lastModified,
-      contentUrl: ''
+      contentUrl: bucket + path.path + '/' + name + (child.prefix? '/' : '')
     })
   }
 
